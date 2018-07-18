@@ -87,8 +87,8 @@ def recon(
     center: array, optional
         Location of rotation axis.
     sinogram_order: bool, optional
-        Determins whether data is a stack of sinograms (True, y-axis first axis)
-        or a stack of radiographs (False, theta first axis).
+        Determines whether data is a stack of sinograms (True, y-axis first
+        axis) or a stack of radiographs (False, theta first axis).
     algorithm : {str, function}
         One of the following string values.
 
@@ -147,9 +147,10 @@ def recon(
             specifying a custom filter in Fourier domain. The first element
             of the filter should be the zero-frequency component.
         'custom2d'
-            A numpy array of size `num_projections*next_power_of_2(num_detector_columns)/2`
-            specifying a custom angle-dependent filter in Fourier domain. The first element
-            of each filter should be the zero-frequency component.
+            A numpy array of size `num_projections * next_power_of_2
+            (num_detector_columns) / 2` specifying a custom angle-dependent
+            filter in Fourier domain. The first element of each filter should
+            be the zero-frequency component.
 
     filter_par: list, optional
         Filter parameters as a list.
@@ -220,7 +221,8 @@ def recon(
 
     allowed_kwargs = {
         'art': ['num_gridx', 'num_gridy', 'num_iter'],
-        'art_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter', 'bin', 'mask'],
+        'art_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter',
+                             'bin', 'mask'],
         'bart': ['num_gridx', 'num_gridy', 'num_iter',
                  'num_block', 'ind_block'],
         'fbp': ['num_gridx', 'num_gridy', 'filter_name', 'filter_par'],
@@ -231,19 +233,26 @@ def recon(
         'ospml_hybrid': ['num_gridx', 'num_gridy', 'num_iter',
                          'reg_par', 'num_block', 'ind_block'],
         'ospml_hybrid3': ['num_gridx', 'num_gridy', 'num_iter',
-                         'reg_par', 'num_block', 'ind_block'],
+                          'reg_par', 'num_block', 'ind_block'],
         'ospml_hybrid3_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter',
-                         'reg_par', 'num_block', 'ind_block', 'bin', 'mask'],
-        'ospml_hybrid3_fly_rotation_interlaced': ['num_gridx', 'num_gridy', 'num_iter',
-                         'reg_par', 'num_block', 'ind_block', 'bin', 'mask'],
-        'ospml_hybrid3_fly_rotation_interlaced_reg': ['num_gridx', 'num_gridy', 'num_iter',
-                         'reg_par', 'num_block', 'ind_block', 'bin', 'mask'],
+                                       'reg_par', 'num_block', 'ind_block',
+                                       'bin', 'mask'],
+        'ospml_hybrid3_fly_rotation_interlaced': ['num_gridx', 'num_gridy',
+                                                  'num_iter',
+                                                  'reg_par', 'num_block',
+                                                  'ind_block', 'bin', 'mask'],
+        'ospml_hybrid3_fly_rotation_interlaced_reg': ['num_gridx', 'num_gridy',
+                                                      'num_iter',
+                                                      'reg_par', 'num_block',
+                                                      'ind_block', 'bin',
+                                                      'mask'],
         'ospml_quad': ['num_gridx', 'num_gridy', 'num_iter',
                        'reg_par', 'num_block', 'ind_block'],
         'pml_hybrid': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
         'pml_quad': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
         'sirt': ['num_gridx', 'num_gridy', 'num_iter'],
-        'sirt_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter', 'bin', 'mask'],
+        'sirt_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter', 'bin',
+                              'mask'],
     }
 
     generic_kwargs = ['num_gridx', 'num_gridy', 'options']
@@ -267,7 +276,8 @@ def recon(
                     (key, allowed_kwargs[algorithm]))
             else:
                 # Make sure they are numpy arrays.
-                if not isinstance(kwargs[key], (np.ndarray, np.generic)) and not isinstance(kwargs[key], six.string_types):
+                if not isinstance(kwargs[key], (np.ndarray, np.generic)) \
+                 and not isinstance(kwargs[key], six.string_types):
                     kwargs[key] = np.array(value)
 
                 # Make sure reg_par and filter_par is float32.
@@ -296,7 +306,8 @@ def recon(
     recon_shape = (tomo.shape[0], kwargs['num_gridx'], kwargs['num_gridy'])
     recon = _init_recon(recon_shape, init_recon, sharedmem=False)
     return _dist_recon(
-        tomo, center_arr, recon, _get_func(algorithm), args, kwargs, ncore, nchunk)
+        tomo, center_arr, recon, _get_func(algorithm), args, kwargs, ncore,
+        nchunk)
 
 
 # Convert data to sinogram order
@@ -380,7 +391,8 @@ def _dist_recon(tomo, center, recon, algorithm, args, kwargs, ncore, nchunk):
         # execute recon on ncore threads
         with cf.ThreadPoolExecutor(ncore) as e:
             for slc in slcs:
-                e.submit(algorithm, tomo[slc], center[slc], recon[slc], *args, **kwargs)
+                e.submit(algorithm, tomo[slc], center[slc], recon[slc], *args,
+                         **kwargs)
     return recon
 
 
@@ -402,5 +414,5 @@ def _get_algorithm_kwargs(shape):
         'ind_block': np.arange(0, dt, dtype=np.float32),  # TODO: I think this should be int
         'options': {},
         'bin': 1,
-        'mask': np.ones(1, dtype='int32'), 
+        'mask': np.ones(1, dtype='int32'),
     }
