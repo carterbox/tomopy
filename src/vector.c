@@ -64,9 +64,9 @@ vector(
     int *indx = (int *)malloc((ngridx+ngridy+1)*sizeof(int));
     int *indy = (int *)malloc((ngridx+ngridy+1)*sizeof(int));
 
-    assert(coordx != NULL && coordy != NULL &&
-        ax != NULL && ay != NULL && by != NULL && bx != NULL &&
-        coorx != NULL && coory != NULL && dist != NULL && indi != NULL);
+    assert(coordx != NULL && coordy != NULL && ax != NULL && ay != NULL &&
+           by != NULL && bx != NULL && coorx != NULL && coory != NULL &&
+           dist != NULL && indx != NULL && indy != NULL);
 
     int s, p, d, i, n, m;
     int quadrant;
@@ -224,9 +224,9 @@ vector2(
     int *indx = (int *)malloc((ngridx+ngridy+1)*sizeof(int));
     int *indy = (int *)malloc((ngridx+ngridy+1)*sizeof(int));
 
-    assert(coordx != NULL && coordy != NULL &&
-        ax != NULL && ay != NULL && by != NULL && bx != NULL &&
-        coorx != NULL && coory != NULL && dist != NULL && indi != NULL);
+    assert(coordx != NULL && coordy != NULL && ax != NULL && ay != NULL &&
+           by != NULL && bx != NULL && coorx != NULL && coory != NULL &&
+           dist != NULL && indx != NULL && indy != NULL);
 
     int s, p, d, i, n, m;
     int quadrant;
@@ -496,9 +496,9 @@ vector3(
     int *indx = (int *)malloc((ngridx+ngridy+1)*sizeof(int));
     int *indy = (int *)malloc((ngridx+ngridy+1)*sizeof(int));
 
-    assert(coordx != NULL && coordy != NULL &&
-        ax != NULL && ay != NULL && by != NULL && bx != NULL &&
-        coorx != NULL && coory != NULL && dist != NULL && indi != NULL);
+    assert(coordx != NULL && coordy != NULL && ax != NULL && ay != NULL &&
+        by != NULL && bx != NULL && coorx != NULL && coory != NULL &&
+        dist != NULL && indx != NULL && indy != NULL);
 
     int s, p, d, i, n, m;
     int quadrant;
