@@ -285,7 +285,7 @@ def c_project_fly_rotation(obj, center, tomo, theta, bin, mask):
         dtype.as_c_int(dt),
         dtype.as_c_int(dx),
         dtype.as_c_float_p(center),
-        dtype.as_c_float_p(theta), 
+        dtype.as_c_float_p(theta),
         dtype.as_c_int(bin),
         dtype.as_c_int_p(mask))
     tomo[:] = contiguous_tomo[:]
@@ -322,7 +322,7 @@ def c_project_fly_rotation_interlaced(obj, center, tomo, theta, bin, mask):
         dtype.as_c_int(dt),
         dtype.as_c_int(dx),
         dtype.as_c_float_p(center),
-        dtype.as_c_float_p(theta), 
+        dtype.as_c_float_p(theta),
         dtype.as_c_int(bin),
         dtype.as_c_int_p(mask))
     tomo[:] = contiguous_tomo[:]
@@ -372,6 +372,14 @@ def c_art_fly_rotation(tomo, center, recon, theta, **kwargs):
     else:
         dy, dt, dx = tomo.shape
 
+    data_pool_size = kwargs['data_pool_size']
+    angles_per_data = kwargs['angles_per_data']
+    angle_weights = kwargs['angle_weights']
+    assert dt * angles_per_data == theta.size
+    # assert data_pool_size * angles_per_data <= angle_weights.size
+    assert angles_per_data > 0
+    assert data_pool_size > 0
+
     theta = np.tile(theta, 2)
     LIB_TOMOPY.art_fly_rotation.restype = dtype.as_c_void_p()
     return LIB_TOMOPY.art_fly_rotation(
@@ -385,8 +393,9 @@ def c_art_fly_rotation(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['num_gridx']),
             dtype.as_c_int(kwargs['num_gridy']),
             dtype.as_c_int(kwargs['num_iter']),
-            dtype.as_c_int(kwargs['bin']),
-            dtype.as_c_int_p(kwargs['mask']))
+            dtype.as_c_int(kwargs['data_pool_size']),
+            dtype.as_c_int(kwargs['angles_per_data']),
+            dtype.as_c_int_p(kwargs['angle_weights']))
 
 
 def c_bart(tomo, center, recon, theta, **kwargs):

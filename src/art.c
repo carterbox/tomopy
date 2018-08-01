@@ -245,142 +245,108 @@ art(
 }
 
 
-/**
- * @param data Measurements collected at each position. The size of data is dy, dt, dx
- * @param bin The number of angles to be grouped together.
- * @param mask The weights of each of the angles, i.e. the convolution kernel.
- * @param theta The angles at which measurements were collected the size is dt
+/** Reconstruct volume using ART with fly-rotation input
 
- Given a series of measurements, [data], collected at angles, [theta]. Pool
- adjacent measurements together using a convolutional [mask] of size [bin].
+The object model is updated by pooling [data_pool_size] measurements and
+using [data_pool_size]*[angles_per_data] rays to approximate the forward- and
+back-projection footprint of the data pool on the object model. The
+constributions of specific angles can be weighted using [angle_weights].
 
- If the size of [data] is 5 and [bin] is 4, then the [mask] is evaluated at 2
- positions: indices 0 and 1.
+@param data The collected measurements.
+@param data_pool_size The number of measurements to pool per update.
+@param angles_per_data The number of angles per data
+@param angle_weights The weights of each of the angles, i.e. the convolution kernel.
+@param theta The angles to use for updates.
+
+data.size * angles_per_data = theta.size
+pool_size * angles_per_data <= angle_weights.size
+angles_per_data > 0
+data_pool_size > 0
+data.shape = (dy, dt / angles_per_data, dx)
+dt = theta.size
+
+Examples:
+If data_pool_size is 1 and angles_per_data is 3, then one update might consist
+of the following subset of theta and data.
+data =  [0, 1, [2,] 3, 4, 5, 6, 7, 8, 9]
+theta = [0, 1, 2, 3, 4, 5, [6, 7, 8,] 9, ... 29]
+
+If data_pool_size is 5 and angles_per_data is 1, then one update might consist
+of the following subset of theta and data.
+data =  [0, 1, 2, [3, 4, 5, 6, 7,] 8, 9]
+theta = [0, 1, 2, [3, 4, 5, 6, 7,] 8, 9]
+
+If data_pool_size is 3 and angles_per_data is 2, then one update might consist
+of the following subset of theta and data.
+data =  [0, [1, 2, 3,] 4, 5, 6, 7, 8, 9]
+theta = [0, 1, [2, 3, 4, 5, 6, 7,] 8, 9, ... 19]
  */
 void
 art_fly_rotation(
     const float *data, int dy, int dt, int dx,
     const float *center, const float *theta,
-    float *recon, int ngridx, int ngridy, int num_iter, int bin, int *mask)
+    float *recon, int ngridx, int ngridy, int num_iter,
+    int const data_pool_size, int const angles_per_data,
+    int const * const angle_weights)
 {
-    float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
-    float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
-    float *coordx = (float *)malloc((ngridy+1)*sizeof(float));
-    float *coordy = (float *)malloc((ngridx+1)*sizeof(float));
-    float *ax = (float *)malloc((ngridx+ngridy)*sizeof(float));
-    float *ay = (float *)malloc((ngridx+ngridy)*sizeof(float));
-    float *bx = (float *)malloc((ngridx+ngridy)*sizeof(float));
-    float *by = (float *)malloc((ngridx+ngridy)*sizeof(float));
-    float *coorx = (float *)malloc((ngridx+ngridy)*sizeof(float));
-    float *coory = (float *)malloc((ngridx+ngridy)*sizeof(float));
-    assert(gridx != NULL && gridy != NULL && coordx != NULL &&
-           coordy != NULL && ax != NULL && ay != NULL && by != NULL &&
-           bx != NULL && coorx != NULL && coory != NULL);
+    float * const gridx = (float *)malloc((ngridx+1)*sizeof(float));
+    float * const gridy = (float *)malloc((ngridy+1)*sizeof(float));
+    assert(gridx != NULL && gridy != NULL);
+    float mov;
+    preprocessing(ngridx, ngridy, dx, center[0],
+        &mov, gridx, gridy); // Outputs: mov, gridx, gridy
+    int *all_indi, *ray_start, *ray_stride; float *all_dist;
+    compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
+        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist);
+        // Outputs: ray_start, ray_stride, all_indi, all_dist
+    free(gridx);
+    free(gridy);
 
-    float *simdata = malloc(dy * dt * dx * sizeof *simdata);
-    assert(simdata != NULL);
-
-
-    int pool_buffer_size = bin * dx;
-    float* sum_dist2 = malloc(pool_buffer_size * sizeof *sum_dist2);
-    float *dist = malloc(pool_buffer_size * (ngridx + ngridy) * sizeof *dist);
-    float *dist_b;
-    int *indi   = malloc(pool_buffer_size * (ngridx + ngridy) * sizeof *indi);
-    int *indi_b;
-    int *csize  = malloc(pool_buffer_size * sizeof *csize);
+    float *const sum_dist2 = malloc(dx * sizeof *sum_dist2);
     assert(sum_dist2 != NULL);
-    assert(dist != NULL && indi != NULL && csize != NULL);
 
-    float *update = malloc(ngridx * ngridy * sizeof *update);
-    int *nupdate = malloc(ngridx * ngridy * sizeof *nupdate);
+    float *const simdata = malloc(dy * dt / angles_per_data * dx * sizeof *simdata);
+    assert(simdata != NULL);
+    float *const update = malloc(ngridx * ngridy * sizeof *update);
+    int *const nupdate = malloc(ngridx * ngridy * sizeof *nupdate);
     assert(update != NULL && nupdate != NULL);
 
     int s, p, d, i, n, b;
-    int quadrant;
-    float theta_p, sin_p, cos_p;
-    float mov, xi, yi;
-    int asize, bsize;
-    int ind_data, ind_recon;
-
     for (i=0; i<num_iter; i++)
     {
         printf("num_iter=%i\n", i);
-
-        preprocessing(ngridx, ngridy, dx, center[0],
-            &mov, gridx, gridy); // Outputs: mov, gridx, gridy
-
-        memset(simdata, 0, dy * dt * dx * sizeof *simdata);
-
         // For each slice
         for (s=0; s<dy; s++)
         {
-            // For each projection angle
-            for (p=0; p<dt-bin+1; p+=bin)
+            memset(simdata, 0, dy * dt / angles_per_data * dx * sizeof *simdata);
+            memset(update, 0, ngridx * ngridy * sizeof *update);
+            memset(nupdate, 0, ngridx * ngridy * sizeof *nupdate);
+            memset(sum_dist2, 0, sizeof *sum_dist2 * dx);
+            // For each exposure
+            for (p=0; p<dt; p+=angles_per_data)
             {
-                memset(update, 0, ngridx * ngridy * sizeof *update);
-                memset(nupdate, 0, ngridx * ngridy * sizeof *nupdate);
-                memset(sum_dist2, 0, pool_buffer_size * sizeof *sum_dist2);
+                // Compute simdata and sum_dist2
                 // For each detector pixel
                 for (d=0; d<dx; d++)
                 {
-                    // For binned of projection angle
-                    for (b=0; b<bin; b++)
+                    // For each projection angle
+                    for (b=0; b<angles_per_data*data_pool_size; b++)
                     {
-                        // Choose where to store indices and lengths for this
-                        // projection.
-                        int ind_buffer = b + (d * bin);
-                        indi_b = indi + ind_buffer * (ngridx + ngridy);
-                        dist_b = dist + ind_buffer * (ngridx + ngridy);
-
-                        // calculate lengths and intersections ---->
-                        // Calculate the sin and cos values
-                        // of the projection angle and find
-                        // at which quadrant on the cartesian grid.
-                        theta_p = fmod(theta[p+b], 2*M_PI);
-                        quadrant = calc_quadrant(theta_p);
-                        sin_p = sinf(theta_p);
-                        cos_p = cosf(theta_p);
-
-                        // Calculate coordinates
-                        xi = -ngridx-ngridy;
-                        yi = (1-dx)/2.0+d+mov;
-
-                        calc_coords(
-                            ngridx, ngridy, xi, yi, sin_p, cos_p, gridx, gridy,
-                            coordx, coordy);
-
-                        // Merge the (coordx, gridy) and (gridx, coordy)
-                        trim_coords(
-                        ngridx, ngridy, coordx, coordy, gridx, gridy,
-                        &asize, ax, ay, &bsize, bx, by);
-
-                        // Sort the array of intersection points (ax, ay) and
-                        // (bx, by). The new sorted intersection points are
-                        // stored in (coorx, coory). Total number of points
-                        // are csize.
-                        sort_intersections(
-                        quadrant, asize, ax, ay, bsize, bx, by,
-                        &csize[ind_buffer], coorx, coory);
-
-                        // Calculate the distances (dist) between the
-                        // intersection points (coorx, coory). Find the
-                        // indices of the pixels on the reconstruction grid.
-                        calc_dist(
-                        ngridx, ngridy, csize[ind_buffer], coorx, coory,
-                        indi_b, dist_b);
-                        // <---- calculate lengths and intersections
-
+                        int ray = d + (dx * ((p + b) % dt));
+                        // printf("ray = %d\n", ray);
+                        int csize = ray_stride[ray] + 1;
+                        int *indi = all_indi + ray_start[ray];
+                        float * dist = all_dist + ray_start[ray];
                         // Calculate the dot product of the intersection lengths
-                        for (n=0; n<csize[ind_buffer]-1; n++)
+                        for (n=0; n<csize-1; n++)
                         {
-                            sum_dist2[ind_buffer] += dist_b[n] * dist_b[n];
+                            sum_dist2[d] += dist[n] * dist[n];
                         }
-
-                        if (sum_dist2[ind_buffer] != 0.0)
+                        if (sum_dist2[d] != 0.0)
                         {
                             calc_simdata(
-                                s, p+b, d, ngridx, ngridy, dt, dx,
-                                csize[ind_buffer], indi_b, dist_b, recon,
+                                s, p / angles_per_data, d, ngridx, ngridy, dt, dx,
+                                csize, indi, dist, recon,
                                 simdata); // Output: simdata
                         }
                     }
@@ -389,69 +355,57 @@ art_fly_rotation(
                 for (d=0; d<dx; d++)
                 {
                     // Simulate pooled data
-                    float pool_sim = 0;
+                    int ind_data = d + p*dx + s*dt*dx;
+                    float pool_sim = simdata[ind_data];
+                    float pool_sum_dist2 = sum_dist2[d];
                     float pool_data = 0;
-                    float pool_sum_dist2 = 0;
-                    float pool_upd;
-                    for (b=0; b<bin; b++)
+                    float pool_upd = 0;
+
+                    // Pool measurements
+                    for (b=0; b<data_pool_size*angles_per_data; b+=angles_per_data)
                     {
-                        int ind_buffer = b + (d * bin);
-                        if (mask[b] > 0) {
-                            pool_sum_dist2 += sum_dist2[ind_buffer];
-                        }
+                        int p1 = ((p + b) % dt) / angles_per_data;
+                        ind_data = d + p1*dx + s*dt*dx;
+                        pool_data += data[ind_data];
                     }
+
                     if (pool_sum_dist2 > 0) {
-                        for (b=0; b<bin; b++)
-                        {
-                            int p1 = p+b;
-                            if (mask[b] > 0) {
-                                ind_data = d+p1*dx+s*dt*dx;
-                                pool_sim += simdata[ind_data];
-                                pool_data += data[ind_data];
-                            }
-                        }
                         // Compute update
                         pool_upd = (pool_data - pool_sim) / pool_sum_dist2;
 
                         // Update
-                        for (b=0; b<bin; b++)
+                        for (b=0; b<angles_per_data*data_pool_size; b++)
                         {
-                            int ind_buffer = b + (d * bin);
-                            indi_b = indi + ind_buffer * (ngridx + ngridy);
-                            dist_b = dist + ind_buffer * (ngridx + ngridy);
-                            for (n=0; n<csize[ind_buffer]-1; n++)
+                            int ray = d + dx * ((p + b) % dt);
+                            int csize = ray_stride[ray] + 1;
+                            int *indi = all_indi + ray_start[ray];
+                            float * dist = all_dist + ray_start[ray];
+                            for (n=0; n<csize-1; n++)
                             {
-                                float upd = pool_upd*dist_b[n];
+                                float upd = pool_upd*dist[n];
                                 // printf("update %d -> %f\n", n, upd);
-                                update[indi_b[n]] += upd;
-                                nupdate[indi_b[n]] += 1;
+                                update[indi[n]] += upd;
+                                nupdate[indi[n]] += 1;
                             }
                         }
                     }
                 }
-                ind_recon = s*ngridx*ngridy;
-                for (n=0; n<(ngridx*ngridy); n++){
-                    if (nupdate[n] > 0) {
-                        recon[n+ind_recon] += update[n] / nupdate[n];
-                    }
+            }
+            int ind_recon = s*ngridx*ngridy;
+            for (n=0; n<(ngridx*ngridy); n++)
+            {
+                if (nupdate[n] > 0) {
+                    recon[n+ind_recon] += update[n] / nupdate[n];
                 }
             }
         }
     }
-    free(gridx);
-    free(gridy);
-    free(coordx);
-    free(coordy);
-    free(ax);
-    free(ay);
-    free(bx);
-    free(by);
-    free(coorx);
-    free(coory);
     free(simdata);
     free(sum_dist2);
-    free(indi);
-    free(dist);
-    free(csize);
-    // free(update);
+    free(update);
+    free(nupdate);
+    free(ray_start);
+    free(ray_stride);
+    free(all_indi);
+    free(all_dist);
 }

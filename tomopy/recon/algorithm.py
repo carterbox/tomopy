@@ -222,7 +222,8 @@ def recon(
     allowed_kwargs = {
         'art': ['num_gridx', 'num_gridy', 'num_iter'],
         'art_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter',
-                             'bin', 'mask'],
+                             'data_pool_size', 'angles_per_data',
+                             'angle_weights'],
         'bart': ['num_gridx', 'num_gridy', 'num_iter',
                  'num_block', 'ind_block'],
         'fbp': ['num_gridx', 'num_gridy', 'filter_name', 'filter_par'],
@@ -413,6 +414,7 @@ def _get_algorithm_kwargs(shape):
         'num_block': dtype.as_int32(1),
         'ind_block': np.arange(0, dt, dtype=np.float32),  # TODO: I think this should be int
         'options': {},
-        'bin': 1,
-        'mask': np.ones(1, dtype='int32'),
+        'data_pool_size': 1,
+        'angles_per_data': 1,
+        'angle_weights': np.ones(1, dtype='int32'),
     }

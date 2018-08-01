@@ -1,44 +1,44 @@
 // Copyright (c) 2015, UChicago Argonne, LLC. All rights reserved.
 
-// Copyright 2015. UChicago Argonne, LLC. This software was produced 
-// under U.S. Government contract DE-AC02-06CH11357 for Argonne National 
-// Laboratory (ANL), which is operated by UChicago Argonne, LLC for the 
-// U.S. Department of Energy. The U.S. Government has rights to use, 
-// reproduce, and distribute this software.  NEITHER THE GOVERNMENT NOR 
-// UChicago Argonne, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR 
-// ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is 
-// modified to produce derivative works, such modified software should 
-// be clearly marked, so as not to confuse it with the version available 
+// Copyright 2015. UChicago Argonne, LLC. This software was produced
+// under U.S. Government contract DE-AC02-06CH11357 for Argonne National
+// Laboratory (ANL), which is operated by UChicago Argonne, LLC for the
+// U.S. Department of Energy. The U.S. Government has rights to use,
+// reproduce, and distribute this software.  NEITHER THE GOVERNMENT NOR
+// UChicago Argonne, LLC MAKES ANY WARRANTY, EXPRESS OR IMPLIED, OR
+// ASSUMES ANY LIABILITY FOR THE USE OF THIS SOFTWARE.  If software is
+// modified to produce derivative works, such modified software should
+// be clearly marked, so as not to confuse it with the version available
 // from ANL.
 
-// Additionally, redistribution and use in source and binary forms, with 
-// or without modification, are permitted provided that the following 
+// Additionally, redistribution and use in source and binary forms, with
+// or without modification, are permitted provided that the following
 // conditions are met:
 
-//     * Redistributions of source code must retain the above copyright 
-//       notice, this list of conditions and the following disclaimer. 
+//     * Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
 
-//     * Redistributions in binary form must reproduce the above copyright 
-//       notice, this list of conditions and the following disclaimer in 
-//       the documentation and/or other materials provided with the 
-//       distribution. 
+//     * Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in
+//       the documentation and/or other materials provided with the
+//       distribution.
 
-//     * Neither the name of UChicago Argonne, LLC, Argonne National 
-//       Laboratory, ANL, the U.S. Government, nor the names of its 
-//       contributors may be used to endorse or promote products derived 
-//       from this software without specific prior written permission. 
+//     * Neither the name of UChicago Argonne, LLC, Argonne National
+//       Laboratory, ANL, the U.S. Government, nor the names of its
+//       contributors may be used to endorse or promote products derived
+//       from this software without specific prior written permission.
 
-// THIS SOFTWARE IS PROVIDED BY UChicago Argonne, LLC AND CONTRIBUTORS 
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS 
-// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL UChicago 
-// Argonne, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
-// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+// THIS SOFTWARE IS PROVIDED BY UChicago Argonne, LLC AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL UChicago
+// Argonne, LLC OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef _utils_h
@@ -60,7 +60,7 @@
 #ifdef WIN32
 #define DLL __declspec(dllexport)
 #else
-#define DLL 
+#define DLL
 #endif
 
 // Data simulation
@@ -69,10 +69,10 @@ void DLL
 project(
     const float *obj,
     int oy,
-    int ox, 
+    int ox,
     int oz,
     float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -83,10 +83,10 @@ project2(
     const float *objx,
     const float *objy,
     int oy,
-    int ox, 
+    int ox,
     int oz,
     float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -98,10 +98,10 @@ project3(
     const float *objy,
     const float *objz,
     int oy,
-    int ox, 
+    int ox,
     int oz,
     float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -112,10 +112,10 @@ void DLL
 project_fly_rotation(
     const float *obj,
     int oy,
-    int ox, 
+    int ox,
     int oz,
     float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -127,10 +127,10 @@ void DLL
 project_fly_rotation_interlaced(
     const float *obj,
     int oy,
-    int ox, 
+    int ox,
     int oz,
     float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -144,7 +144,7 @@ project_fly_rotation_interlaced(
 void DLL
 art(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -157,7 +157,7 @@ art(
 void DLL
 art_fly_rotation(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -166,13 +166,14 @@ art_fly_rotation(
     int ngridx,
     int ngridy,
     int num_iter,
-    int bin,
-    int *mask);
+    const int data_pool_size,
+    const int angles_per_data,
+    int const * const angle_weights);
 
 void DLL
 bart(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -201,7 +202,7 @@ fbp(
 void DLL
 mlem(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -214,7 +215,7 @@ mlem(
 void DLL
 osem(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -229,7 +230,7 @@ osem(
 void DLL
 ospml_hybrid(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -245,7 +246,7 @@ ospml_hybrid(
 void DLL
 ospml_hybrid3(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -261,7 +262,7 @@ ospml_hybrid3(
 void DLL
 ospml_hybrid3_fly_rotation(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -279,7 +280,7 @@ ospml_hybrid3_fly_rotation(
 void DLL
 ospml_hybrid3_fly_rotation_interlaced(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -297,7 +298,7 @@ ospml_hybrid3_fly_rotation_interlaced(
 void DLL
 ospml_hybrid3_fly_rotation_interlaced_reg(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -315,7 +316,7 @@ ospml_hybrid3_fly_rotation_interlaced_reg(
 void DLL
 ospml_quad(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -331,7 +332,7 @@ ospml_quad(
 void DLL
 pml_hybrid(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -345,7 +346,7 @@ pml_hybrid(
 void DLL
 pml_quad(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -359,7 +360,7 @@ pml_quad(
 void DLL
 sirt(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -372,7 +373,7 @@ sirt(
 void DLL
 sirt_fly_rotation(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -387,7 +388,7 @@ sirt_fly_rotation(
 void DLL
 vector(
     const float *data,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center,
@@ -402,7 +403,7 @@ void DLL
 vector2(
     const float *data1,
     const float *data2,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center1,
@@ -423,7 +424,7 @@ vector3(
     const float *data1,
     const float *data2,
     const float *data3,
-    int dy, 
+    int dy,
     int dt,
     int dx,
     const float *center1,
@@ -447,14 +448,14 @@ vector3(
 
 void DLL
 preprocessing(
-    int ngridx, int ngridy, 
-    int dz, 
-    float center, float *mov, 
+    int ngridx, int ngridy,
+    int dz,
+    float center, float *mov,
     float *gridx, float *gridy);
 
 int DLL
 calc_quadrant(
-    float theta_p); 
+    float theta_p);
 
 void DLL
 calc_coords(
@@ -469,29 +470,29 @@ trim_coords(
     int ngridx, int ngridy,
     const float *coordx, const float *coordy,
     const float *gridx, const float *gridy,
-    int *asize, float *ax, float *ay, 
+    int *asize, float *ax, float *ay,
     int *bsize, float *bx, float *by);
 
 void DLL
 sort_intersections(
-    int ind_condition, 
+    int ind_condition,
     int asize, const float *ax, const float *ay,
     int bsize, const float *bx, const float *by,
-    int *csize, 
+    int *csize,
     float *coorx, float *coory);
 
 void DLL
 calc_dist(
-    int ngridx, int ngridy, 
-    int csize, 
+    int ngridx, int ngridy,
+    int csize,
     const float *coorx, const float *coory,
-    int *indi, 
+    int *indi,
     float *dist);
 
 void DLL
 calc_dist2(
-    int ngridx, int ngridy, 
-    int csize, 
+    int ngridx, int ngridy,
+    int csize,
     const float *coorx, const float *coory,
     int *indx, int *indy,
     float *dist);
@@ -499,9 +500,9 @@ calc_dist2(
 void DLL
 calc_simdata(
     int s, int p, int d,
-    int ngridx, int ngridy, 
+    int ngridx, int ngridy,
     int dt, int dx,
-    int csize, 
+    int csize,
     const int *indi,
     const float *dist,
     const float *model,
@@ -510,9 +511,9 @@ calc_simdata(
 void DLL
 calc_simdata2(
     int s, int p, int d,
-    int ngridx, int ngridy, 
+    int ngridx, int ngridy,
     int dt, int dx,
-    int csize, 
+    int csize,
     const int *indx,
     const int *indy,
     const float *dist,
@@ -524,9 +525,9 @@ calc_simdata2(
 void DLL
 calc_simdata3(
     int s, int p, int d,
-    int ngridx, int ngridy, 
+    int ngridx, int ngridy,
     int dt, int dx,
-    int csize, 
+    int csize,
     const int *indx,
     const int *indy,
     const float *dist,
