@@ -77,6 +77,7 @@ __all__ = ['c_shared_lib',
            'c_remove_stripe_sf',
            'c_sample',
            'c_art',
+           'c_art_convolve',
            'c_art_fly_rotation',
            'c_bart',
            'c_fbp',
@@ -90,6 +91,7 @@ __all__ = ['c_shared_lib',
            'c_pml_hybrid',
            'c_pml_quad',
            'c_sirt',
+           'c_sirt_convolve',
            'c_sirt_fly_rotation',
            'c_vector',
            'c_vector2',
@@ -285,7 +287,7 @@ def c_project_fly_rotation(obj, center, tomo, theta, bin, mask):
         dtype.as_c_int(dt),
         dtype.as_c_int(dx),
         dtype.as_c_float_p(center),
-        dtype.as_c_float_p(theta), 
+        dtype.as_c_float_p(theta),
         dtype.as_c_int(bin),
         dtype.as_c_int_p(mask))
     tomo[:] = contiguous_tomo[:]
@@ -322,7 +324,7 @@ def c_project_fly_rotation_interlaced(obj, center, tomo, theta, bin, mask):
         dtype.as_c_int(dt),
         dtype.as_c_int(dx),
         dtype.as_c_float_p(center),
-        dtype.as_c_float_p(theta), 
+        dtype.as_c_float_p(theta),
         dtype.as_c_int(bin),
         dtype.as_c_int_p(mask))
     tomo[:] = contiguous_tomo[:]
@@ -375,6 +377,31 @@ def c_art_fly_rotation(tomo, center, recon, theta, **kwargs):
     theta = np.tile(theta, 2)
     LIB_TOMOPY.art_fly_rotation.restype = dtype.as_c_void_p()
     return LIB_TOMOPY.art_fly_rotation(
+            dtype.as_c_float_p(tomo),
+            dtype.as_c_int(dy),
+            dtype.as_c_int(dt),
+            dtype.as_c_int(dx),
+            dtype.as_c_float_p(center),
+            dtype.as_c_float_p(theta),
+            dtype.as_c_float_p(recon),
+            dtype.as_c_int(kwargs['num_gridx']),
+            dtype.as_c_int(kwargs['num_gridy']),
+            dtype.as_c_int(kwargs['num_iter']),
+            dtype.as_c_int(kwargs['bin']),
+            dtype.as_c_int_p(kwargs['mask']))
+
+
+def c_art_convolve(tomo, center, recon, theta, **kwargs):
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+
+    theta = np.tile(theta, 2)
+    LIB_TOMOPY.art_fly_rotation.restype = dtype.as_c_void_p()
+    return LIB_TOMOPY.art_convolve(
             dtype.as_c_float_p(tomo),
             dtype.as_c_int(dy),
             dtype.as_c_int(dt),
@@ -739,6 +766,30 @@ def c_sirt_fly_rotation(tomo, center, recon, theta, **kwargs):
 
     LIB_TOMOPY.sirt_fly_rotation.restype = dtype.as_c_void_p()
     return LIB_TOMOPY.sirt_fly_rotation(
+            dtype.as_c_float_p(tomo),
+            dtype.as_c_int(dy),
+            dtype.as_c_int(dt),
+            dtype.as_c_int(dx),
+            dtype.as_c_float_p(center),
+            dtype.as_c_float_p(theta),
+            dtype.as_c_float_p(recon),
+            dtype.as_c_int(kwargs['num_gridx']),
+            dtype.as_c_int(kwargs['num_gridy']),
+            dtype.as_c_int(kwargs['num_iter']),
+            dtype.as_c_int(kwargs['bin']),
+            dtype.as_c_int_p(kwargs['mask']))
+
+
+def c_sirt_convolve(tomo, center, recon, theta, **kwargs):
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+
+    LIB_TOMOPY.sirt_fly_rotation.restype = dtype.as_c_void_p()
+    return LIB_TOMOPY.sirt_convolve(
             dtype.as_c_float_p(tomo),
             dtype.as_c_int(dy),
             dtype.as_c_int(dt),

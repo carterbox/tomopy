@@ -223,6 +223,8 @@ def recon(
         'art': ['num_gridx', 'num_gridy', 'num_iter'],
         'art_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter',
                              'bin', 'mask'],
+        'art_convolve': ['num_gridx', 'num_gridy', 'num_iter',
+                         'bin', 'mask'],
         'bart': ['num_gridx', 'num_gridy', 'num_iter',
                  'num_block', 'ind_block'],
         'fbp': ['num_gridx', 'num_gridy', 'filter_name', 'filter_par'],
@@ -253,6 +255,8 @@ def recon(
         'sirt': ['num_gridx', 'num_gridy', 'num_iter'],
         'sirt_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter', 'bin',
                               'mask'],
+        'sirt_convolve': ['num_gridx', 'num_gridy', 'num_iter', 'bin',
+                          'mask'],
     }
 
     generic_kwargs = ['num_gridx', 'num_gridy', 'options']
@@ -345,6 +349,8 @@ def _get_func(algorithm):
         func = extern.c_art
     elif algorithm == 'art_fly_rotation':
         func = extern.c_art_fly_rotation
+    elif algorithm == 'art_convolve':
+        func = extern.c_art_convolve
     elif algorithm == 'bart':
         func = extern.c_bart
     elif algorithm == 'fbp':
@@ -375,6 +381,8 @@ def _get_func(algorithm):
         func = extern.c_sirt
     elif algorithm == 'sirt_fly_rotation':
         func = extern.c_sirt_fly_rotation
+    elif algorithm == 'sirt_convolve':
+        func = extern.c_sirt_convolve
     else:
         func = algorithm
     return func
