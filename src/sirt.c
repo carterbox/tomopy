@@ -296,14 +296,16 @@ sirt_fly_rotation(
                             // Update
                             for (b=0; b<bin; b++)
                             {
-                                ray = d + dx*(p-b);
-                                dist = all_dist + ray_start[ray];
-                                indi = all_indi + ray_start[ray];
-                                ind_recon = s*ngridx*ngridy;
-                                for (n=0; n<ray_stride[ray]; n++)
-                                {
-                                	update[indi[n]+ind_recon] += pool_upd*dist[n];
-                                    nupdate[indi[n]+ind_recon] += 1;
+                                if (mask[b] > 0) {
+                                    ray = d + dx*(p-b);
+                                    dist = all_dist + ray_start[ray];
+                                    indi = all_indi + ray_start[ray];
+                                    ind_recon = s*ngridx*ngridy;
+                                    for (n=0; n<ray_stride[ray]; n++)
+                                    {
+                                        update[indi[n]+ind_recon] += pool_upd*dist[n];
+                                        nupdate[indi[n]+ind_recon] += 1;
+                                    }
                                 }
                             }
                         }
@@ -435,14 +437,16 @@ sirt_convolve(
                             // Update
                             for (b=0; b<bin; b++)
                             {
-                                ray = d + dx*(p-b);
-                                dist = all_dist + ray_start[ray];
-                                indi = all_indi + ray_start[ray];
-                                ind_recon = s*ngridx*ngridy;
-                                for (n=0; n<ray_stride[ray]; n++)
-                                {
-                                	update[indi[n]+ind_recon] += pool_upd*dist[n];
-                                    nupdate[indi[n]+ind_recon] += 1;
+                                if (mask[b] > 0) {
+                                    ray = d + dx*(p-b);
+                                    dist = all_dist + ray_start[ray];
+                                    indi = all_indi + ray_start[ray];
+                                    ind_recon = s*ngridx*ngridy;
+                                    for (n=0; n<ray_stride[ray]; n++)
+                                    {
+                                        update[indi[n]+ind_recon] += pool_upd*dist[n];
+                                        nupdate[indi[n]+ind_recon] += 1;
+                                    }
                                 }
                             }
                         }
