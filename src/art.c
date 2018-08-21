@@ -436,14 +436,19 @@ art_convolve(
 
     for (i=0; i<num_iter; i++)
     {
+        #pragma omp single
+        printf("tomopy:art_convolve: iteration %d\n", i);
         // For each projection angle
         for (p=bin-1; p<dt; p++)
         {
             // initialize simdata to zero
-            memset(simdata, 0, dy*dt*dx*sizeof(float));
-            memset(sum_dist2, 0, sizeof *sum_dist2 * dt * dx);
-            memset(update, 0, ngridx * ngridy * dy * sizeof *update);
-            memset(nupdate, 0, ngridx * ngridy * dy * sizeof *nupdate);
+            #pragma omp single
+            {
+                memset(simdata, 0, dy*dt*dx*sizeof(float));
+                memset(sum_dist2, 0, sizeof *sum_dist2 * dt * dx);
+                memset(update, 0, ngridx * ngridy * dy * sizeof *update);
+                memset(nupdate, 0, ngridx * ngridy * dy * sizeof *nupdate);
+            }
             for (b=0; b<bin; b++)
             {
                 // For each detector pixel
@@ -471,6 +476,7 @@ art_convolve(
                     }
             }
             // For each detector pixel
+            #pragma omp single
             for (d=0; d<dx; d++)
             {
                 // Simulate pooled data
@@ -518,6 +524,7 @@ art_convolve(
                     }
                 }
             }
+            #pragma omp single
             for (n=0; n<(ngridx*ngridy*dy); n++){
                 if (nupdate[n] > 0) {
                     recon[n] += update[n] / nupdate[n];

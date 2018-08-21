@@ -339,8 +339,6 @@ sirt_convolve(
     float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
     float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
     assert(gridx != NULL && gridy != NULL);
-    float* simdata = (float *)malloc((dy*dt*dx)*sizeof(float));
-    assert(simdata != NULL);
 
     float mov;
 
@@ -359,93 +357,106 @@ sirt_convolve(
     float *update = malloc(ngridx * ngridy * dy * sizeof *update);
     int *nupdate = malloc(ngridx * ngridy * dy * sizeof *nupdate);
     assert(update != NULL && nupdate != NULL);
-
-    float *dist;
-    int *indi;
+    float* simdata = (float *)malloc((dy*dt*dx)*sizeof(float));
+    assert(simdata != NULL);
     float *sum_dist2 = malloc(sizeof *sum_dist2 * dt * dx);
     assert(sum_dist2 != NULL);
-    int ray, ind_data, ind_recon;
-    int s, p, d, i, n, b;
-    float pool_sim, pool_data, pool_sum_dist2, pool_upd;
 
-    for (i=0; i<num_iter; i++)
+    #pragma omp parallel
     {
-        printf("SIRT convolve: iteration %d\n", i);
-        // initialize simdata to zero
-        memset(update, 0, ngridx * ngridy * dy * sizeof *update);
-        memset(nupdate, 0, ngridx * ngridy * dy * sizeof *nupdate);
-        memset(simdata, 0, dy*dt*dx*sizeof(float));
-        memset(sum_dist2, 0, sizeof *sum_dist2 * dt * dx);
-        // For each projection angle
-        for (p=0; p<dt; p++)
+        float *dist;
+        int *indi;
+        int ray, ind_data, ind_recon;
+        int s, p, d, i, n, b;
+        float pool_sim, pool_data, pool_sum_dist2, pool_upd;
+
+        for (i=0; i<num_iter; i++)
         {
-            // For each detector pixel
-            for (d=0; d<dx; d++)
+            #pragma omp single
             {
-                ray = d + dx*p;
-                dist = all_dist + ray_start[ray];
-                indi = all_indi + ray_start[ray];
-                // Calculate dist*dist
-                for (n=0; n<ray_stride[ray]; n++)
-                {
-                    sum_dist2[ray] += dist[n]*dist[n];
-                }
-                if (sum_dist2[ray] != 0.0)
-                {
-                    // For each slice
-                    for (s=0; s<dy; s++)
-                    {
-                        // Calculate simdata
-                        calc_simdata(s, p, d, ngridx, ngridy, dt, dx,
-                            ray_stride[ray]+1, indi, dist, recon,
-                            simdata); // Output: simdata
-                    }
-                }
+                printf("sirt_convolve: iteration %d\n", i);
+                // initialize simdata to zero
+                memset(update, 0, ngridx * ngridy * dy * sizeof *update);
+                memset(nupdate, 0, ngridx * ngridy * dy * sizeof *nupdate);
+                memset(simdata, 0, dy*dt*dx*sizeof(float));
+                memset(sum_dist2, 0, sizeof *sum_dist2 * dt * dx);
             }
-            if (p >= bin - 1)
+            // For each projection angle
+            #pragma omp for
+            for (p=0; p<dt; p++)
             {
                 // For each detector pixel
                 for (d=0; d<dx; d++)
                 {
-                    // Simulate pooled data
-                    pool_sim = 0; pool_data = 0; pool_sum_dist2 = 0;
-                    for (b=0; b<bin; b++)
+                    ray = d + dx*p;
+                    dist = all_dist + ray_start[ray];
+                    indi = all_indi + ray_start[ray];
+                    // Calculate dist*dist
+                    for (n=0; n<ray_stride[ray]; n++)
                     {
-                        if (mask[b] > 0) {
-                            ray = d + dx*(p-b);
-                            pool_sum_dist2 += sum_dist2[ray];
-                        }
+                        sum_dist2[ray] += dist[n]*dist[n];
                     }
-                    if (pool_sum_dist2 > 0)
+                    if (sum_dist2[ray] != 0.0)
                     {
                         // For each slice
                         for (s=0; s<dy; s++)
                         {
-                            for (b=0; b<bin; b++)
-                            {
-                                if (mask[b] > 0)
-                                {
-                                    int p1 = p-b;
-                                    ind_data = d+p1*dx+s*dt*dx;
-                                    pool_sim += simdata[ind_data];
-                                    pool_data += data[ind_data];
-                                }
+                            // Calculate simdata
+                            calc_simdata(s, p, d, ngridx, ngridy, dt, dx,
+                                ray_stride[ray]+1, indi, dist, recon,
+                                simdata); // Output: simdata
+                        }
+                    }
+                }
+            }
+            #pragma omp single
+            for (p=0; p<dt; p++)
+            {
+                if (p >= bin - 1)
+                {
+                    // For each detector pixel
+                    for (d=0; d<dx; d++)
+                    {
+                        // Simulate pooled data
+                        pool_sim = 0; pool_data = 0; pool_sum_dist2 = 0;
+                        for (b=0; b<bin; b++)
+                        {
+                            if (mask[b] > 0) {
+                                ray = d + dx*(p-b);
+                                pool_sum_dist2 += sum_dist2[ray];
                             }
-                            // Compute update
-                            pool_upd = (pool_data - pool_sim) / pool_sum_dist2;
-
-                            // Update
-                            for (b=0; b<bin; b++)
+                        }
+                        if (pool_sum_dist2 > 0)
+                        {
+                            // For each slice
+                            for (s=0; s<dy; s++)
                             {
-                                if (mask[b] > 0) {
-                                    ray = d + dx*(p-b);
-                                    dist = all_dist + ray_start[ray];
-                                    indi = all_indi + ray_start[ray];
-                                    ind_recon = s*ngridx*ngridy;
-                                    for (n=0; n<ray_stride[ray]; n++)
+                                for (b=0; b<bin; b++)
+                                {
+                                    if (mask[b] > 0)
                                     {
-                                        update[indi[n]+ind_recon] += pool_upd*dist[n];
-                                        nupdate[indi[n]+ind_recon] += 1;
+                                        int p1 = p-b;
+                                        ind_data = d+p1*dx+s*dt*dx;
+                                        pool_sim += simdata[ind_data];
+                                        pool_data += data[ind_data];
+                                    }
+                                }
+                                // Compute update
+                                pool_upd = (pool_data - pool_sim) / pool_sum_dist2;
+
+                                // Update
+                                for (b=0; b<bin; b++)
+                                {
+                                    if (mask[b] > 0) {
+                                        ray = d + dx*(p-b);
+                                        dist = all_dist + ray_start[ray];
+                                        indi = all_indi + ray_start[ray];
+                                        ind_recon = s*ngridx*ngridy;
+                                        for (n=0; n<ray_stride[ray]; n++)
+                                        {
+                                            update[indi[n]+ind_recon] += pool_upd*dist[n];
+                                            nupdate[indi[n]+ind_recon] += 1;
+                                        }
                                     }
                                 }
                             }
@@ -453,19 +464,20 @@ sirt_convolve(
                     }
                 }
             }
-        }
-        for (n=0; n<(ngridx*ngridy*dy); n++){
-            if (nupdate[n] > 0) {
-                recon[n] += update[n] / nupdate[n];
+            #pragma omp single
+            for (n=0; n<(ngridx*ngridy*dy); n++){
+                if (nupdate[n] > 0) {
+                    recon[n] += update[n] / nupdate[n];
+                }
             }
         }
     }
-    free(simdata);
+    free(all_dist);
+    free(all_indi);
     free(ray_start);
     free(ray_stride);
-    free(all_indi);
-    free(all_dist);
     free(update);
     free(nupdate);
+    free(simdata);
     free(sum_dist2);
 }
