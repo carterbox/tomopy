@@ -52,8 +52,7 @@ art(
     float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
     float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
     assert(gridx != NULL && gridy != NULL);
-    float* simdata = (float *)malloc((dy*dt*dx)*sizeof(float));
-    assert(simdata != NULL);
+    float* simdata;
 
     float mov;
 
@@ -78,7 +77,8 @@ art(
     for (i=0; i<num_iter; i++)
     {
         // initialize simdata to zero
-        memset(simdata, 0, dy*dt*dx*sizeof(float));
+        simdata = (float *)calloc((dt*dy*dx), sizeof(float));
+        assert(simdata != NULL);
         // For each projection angle
         for (p=0; p<dt; p++)
         {
@@ -115,8 +115,8 @@ art(
                 }
             }
         }
+        free(simdata);
     }
-    free(simdata);
     free(ray_start);
     free(ray_stride);
     free(all_indi);
@@ -145,8 +145,7 @@ art_fly_rotation(
     float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
     float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
     assert(gridx != NULL && gridy != NULL);
-    float* simdata = (float *)malloc((dy*dt*dx)*sizeof(float));
-    assert(simdata != NULL);
+    float* simdata;
 
     float mov;
 
@@ -162,14 +161,12 @@ art_fly_rotation(
     free(gridx);
     free(gridy);
 
-    float *update = malloc(ngridx * ngridy * dy * sizeof *update);
-    int *nupdate = malloc(ngridx * ngridy * dy * sizeof *nupdate);
-    assert(update != NULL && nupdate != NULL);
+    float *update;
+    int *nupdate;
 
     float *dist;
     int *indi;
-    float *sum_dist2 = malloc(sizeof *sum_dist2 * dt * dx);
-    assert(sum_dist2 != NULL);
+    float *sum_dist2;
     int ray, ind_data, ind_recon;
     int s, p, d, i, n, b;
     float pool_sim, pool_data, pool_sum_dist2, pool_upd;
@@ -177,8 +174,10 @@ art_fly_rotation(
     for (i=0; i<num_iter; i++)
     {
         // initialize simdata to zero
-        memset(simdata, 0, dy*dt*dx*sizeof(float));
-        memset(sum_dist2, 0, sizeof *sum_dist2 * dt * dx);
+        simdata = calloc(dy*dt*dx, sizeof(float));
+        sum_dist2 = calloc(dt * dx, sizeof *sum_dist2);
+        assert(simdata != NULL);
+        assert(sum_dist2 != NULL);
         // For each projection angle
         for (p=0; p<dt; p++)
         {
@@ -207,8 +206,9 @@ art_fly_rotation(
             }
             if ((p+1) % bin == 0)
             {
-                memset(update, 0, ngridx * ngridy * dy * sizeof *update);
-                memset(nupdate, 0, ngridx * ngridy * dy * sizeof *nupdate);
+                update = calloc(ngridx * ngridy * dy, sizeof *update);
+                nupdate = calloc(ngridx * ngridy * dy, sizeof *nupdate);
+                assert(update != NULL && nupdate != NULL);
                 // For each detector pixel
                 for (d=0; d<dx; d++)
                 {
@@ -262,17 +262,17 @@ art_fly_rotation(
                         recon[n] += update[n] / nupdate[n];
                     }
                 }
+                free(update);
+                free(nupdate);
             }
         }
+        free(simdata);
+        free(sum_dist2);
     }
-    free(simdata);
     free(ray_start);
     free(ray_stride);
     free(all_indi);
     free(all_dist);
-    free(update);
-    free(nupdate);
-    free(sum_dist2);
 }
 
 void
