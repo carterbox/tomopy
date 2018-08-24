@@ -207,10 +207,11 @@ sirt_fly_rotation(
     preprocessing(ngridx, ngridy, dx, center[0],
         &mov, gridx, gridy); // Outputs: mov, gridx, gridy
 
-    float *all_dist;
+    float *all_dist, *all_sum_dist2;
     int *all_indi, *ray_start, *ray_stride;
     compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
-        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist);
+        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
+        &all_sum_dist2);
         // Outputs: ray_start, ray_stride, all_indi, all_dist
 
     free(gridx);
@@ -327,6 +328,7 @@ sirt_fly_rotation(
     free(update);
     free(nupdate);
     free(sum_dist2);
+    free(all_sum_dist2);
 }
 
 
@@ -347,10 +349,11 @@ sirt_convolve(
     preprocessing(ngridx, ngridy, dx, center[0],
         &mov, gridx, gridy); // Outputs: mov, gridx, gridy
 
-    float *all_dist;
+    float *all_dist, *all_sum_dist2;
     int *all_indi, *ray_start, *ray_stride;
     compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
-        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist);
+        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
+        &all_sum_dist2);
         // Outputs: ray_start, ray_stride, all_indi, all_dist
 
     free(gridx);
@@ -468,4 +471,5 @@ sirt_convolve(
     free(update);
     free(nupdate);
     free(sum_dist2);
+    free(all_sum_dist2);
 }

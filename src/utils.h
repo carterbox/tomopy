@@ -543,6 +543,7 @@ compute_indices_and_lengths(
     const float *gridx, const float *gridy, const float mov,
     const int ngridx, const int ngridy,
     int ** const ray_start, int ** const ray_stride,
-    int ** const indices, float ** const distances);
+    int ** const indices, float ** const distances,
+    float ** const sum_distances2);
 
 #endif

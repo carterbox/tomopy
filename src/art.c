@@ -59,10 +59,11 @@ art(
     preprocessing(ngridx, ngridy, dx, center[0],
         &mov, gridx, gridy); // Outputs: mov, gridx, gridy
 
-    float *all_dist;
+    float *all_dist, *all_sum_dist2;
     int *all_indi, *ray_start, *ray_stride;
     compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
-        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist);
+        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
+        &all_sum_dist2);
         // Outputs: ray_start, ray_stride, all_indi, all_dist
 
     free(gridx);
@@ -88,12 +89,7 @@ art(
                 ray = d + dx*p;
                 dist = all_dist + ray_start[ray];
                 indi = all_indi + ray_start[ray];
-                // Calculate dist*dist
-                sum_dist2 = 0.0;
-                for (n=0; n<ray_stride[ray]; n++)
-                {
-                    sum_dist2 += dist[n]*dist[n];
-                }
+                sum_dist2 = all_sum_dist2[ray];
                 if (sum_dist2 != 0.0)
                 {
                     // For each slice
@@ -121,6 +117,7 @@ art(
     free(ray_stride);
     free(all_indi);
     free(all_dist);
+    free(all_sum_dist2);
 }
 
 
@@ -152,10 +149,11 @@ art_fly_rotation(
     preprocessing(ngridx, ngridy, dx, center[0],
         &mov, gridx, gridy); // Outputs: mov, gridx, gridy
 
-    float *all_dist;
+    float *all_dist, *all_sum_dist2;
     int *all_indi, *ray_start, *ray_stride;
     compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
-        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist);
+        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
+        &all_sum_dist2);
         // Outputs: ray_start, ray_stride, all_indi, all_dist
 
     free(gridx);
@@ -273,6 +271,7 @@ art_fly_rotation(
     free(ray_stride);
     free(all_indi);
     free(all_dist);
+    free(all_sum_dist2);
 }
 
 void
@@ -292,10 +291,11 @@ art_convolve(
     preprocessing(ngridx, ngridy, dx, center[0],
         &mov, gridx, gridy); // Outputs: mov, gridx, gridy
 
-    float *all_dist;
+    float *all_dist, *all_sum_dist2;
     int *all_indi, *ray_start, *ray_stride;
     compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
-        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist);
+        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
+        &all_sum_dist2);
         // Outputs: ray_start, ray_stride, all_indi, all_dist
 
     free(gridx);
@@ -412,4 +412,5 @@ art_convolve(
     free(update);
     free(nupdate);
     free(sum_dist2);
+    free(all_sum_dist2);
 }

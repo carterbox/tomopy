@@ -347,14 +347,17 @@ compute_indices_and_lengths(
     const float *gridx, const float *gridy, const float mov,
     const int ngridx, const int ngridy,
     int ** const ray_start, int ** const ray_stride,
-    int ** const indices, float ** const distances)
+    int ** const indices, float ** const distances,
+    float ** const sum_distances2)
 {
     int ** const indi_list = malloc(sizeof *indi_list * dx*dt);
     float ** const dist_list = malloc(sizeof *dist_list * dx*dt);
     *ray_start = malloc(sizeof **ray_start * dx*dt);
     *ray_stride = malloc(sizeof **ray_stride * dx*dt);
     assert(indi_list != NULL && dist_list != NULL &&
-        ray_start != NULL && ray_stride != NULL);
+           *ray_start != NULL && *ray_stride != NULL);
+    *sum_distances2 = calloc(dx*dt, sizeof **sum_distances2);
+    assert(*sum_distances2 != NULL);
 
     #pragma omp parallel
     {
@@ -396,25 +399,25 @@ compute_indices_and_lengths(
                 xi = -ngridx-ngridy;
                 yi = (1-dx)/2.0+d+mov;
                 calc_coords(
-                ngridx, ngridy, xi, yi, sin_p, cos_p, gridx, gridy,
-                coordx, coordy);
+                    ngridx, ngridy, xi, yi, sin_p, cos_p, gridx, gridy,
+                    coordx, coordy);
                 // Merge the (coordx, gridy) and (gridx, coordy)
                 trim_coords(
-                ngridx, ngridy, coordx, coordy, gridx, gridy,
-                &asize, ax, ay, &bsize, bx, by);
+                    ngridx, ngridy, coordx, coordy, gridx, gridy,
+                    &asize, ax, ay, &bsize, bx, by);
                 // Sort the array of intersection points (ax, ay) and
                 // (bx, by). The new sorted intersection points are
                 // stored in (coorx, coory). Total number of points
                 // are csize.
                 sort_intersections(
-                quadrant, asize, ax, ay, bsize, bx, by,
-                &csize, coorx, coory);
+                    quadrant, asize, ax, ay, bsize, bx, by,
+                    &csize, coorx, coory);
                 // Calculate the distances (dist) between the
                 // intersection points (coorx, coory). Find the
                 // indices of the pixels on the reconstruction grid.
                 calc_dist(
-                ngridx, ngridy, csize, coorx, coory,
-                indi, dist);
+                    ngridx, ngridy, csize, coorx, coory,
+                    indi, dist);
                 // Save the intersections and lengths from this ray
                 int ray = d + p*dx;
                 indi_list[ray] = indi;
@@ -440,7 +443,6 @@ compute_indices_and_lengths(
                 (*ray_start)[ray] = sum_ray_stride;
                 sum_ray_stride += (*ray_stride)[ray];
             }
-            // Copy all of the intersections and distances into one array each
             *indices = malloc(sizeof **indices * sum_ray_stride);
             *distances = malloc(sizeof **distances * sum_ray_stride);
         }
@@ -449,6 +451,12 @@ compute_indices_and_lengths(
         #pragma omp for nowait
         for (int ray=0; ray<dx*dt; ray++)
         {
+            // Compute the squared sum of the distances for each ray
+            for (int n=0; n<(*ray_stride)[ray]; n++)
+            {
+                (*sum_distances2)[ray] += dist_list[ray][n]*dist_list[ray][n];
+            }
+            // Copy all of the intersections and distances into one array each
             int j = (*ray_start)[ray];
             memcpy(&(*indices)[j], indi_list[ray],
                 sizeof **indices * (*ray_stride)[ray]);
