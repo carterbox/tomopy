@@ -230,7 +230,7 @@ art(
                         upd = (data[ind_data]-simdata[ind_data])/sum_dist2;
                         for (n=0; n<ray_stride[ray]; n++)
                         {
-                        	recon[indi[n]+ind_recon] += upd*dist[n];
+                            recon[indi[n]+ind_recon] += upd*dist[n];
                         }
                     }
                 }
