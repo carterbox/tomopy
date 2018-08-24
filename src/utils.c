@@ -281,7 +281,7 @@ calc_simdata(
     int n;
 
     int index_model = s*ry*rz;
-    int index_data = d+p*dx+s*dt*dx;
+    int index_data = d + p*dx + s*dt*dx;
     for (n=0; n<csize-1; n++)
     {
         simdata[index_data] += model[indi[n]+index_model]*dist[n];

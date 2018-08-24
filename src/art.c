@@ -77,23 +77,24 @@ art(
 
     for (i=0; i<num_iter; i++)
     {
+        printf("art: iteration %d\n", i);
         // initialize simdata to zero
         simdata = (float *)calloc((dt*dy*dx), sizeof(float));
         assert(simdata != NULL);
-        // For each projection angle
-        for (p=0; p<dt; p++)
+        // For each slice
+        for (s=0; s<dy; s++)
         {
-            // For each detector pixel
-            for (d=0; d<dx; d++)
+            // For each projection angle
+            for (p=0; p<dt; p++)
             {
-                ray = d + dx*p;
-                dist = all_dist + ray_start[ray];
-                indi = all_indi + ray_start[ray];
-                sum_dist2 = all_sum_dist2[ray];
-                if (sum_dist2 != 0.0)
+                // For each detector pixel
+                for (d=0; d<dx; d++)
                 {
-                    // For each slice
-                    for (s=0; s<dy; s++)
+                    ray = d + dx*p;
+                    dist = all_dist + ray_start[ray];
+                    indi = all_indi + ray_start[ray];
+                    sum_dist2 = all_sum_dist2[ray];
+                    if (sum_dist2 != 0.0)
                     {
                         // Calculate simdata
                         calc_simdata(s, p, d, ngridx, ngridy, dt, dx,
@@ -176,24 +177,24 @@ art_fly_rotation(
         sum_dist2 = calloc(dt * dx, sizeof *sum_dist2);
         assert(simdata != NULL);
         assert(sum_dist2 != NULL);
-        // For each projection angle
-        for (p=0; p<dt; p++)
+        // For each slice
+        for (s=0; s<dy; s++)
         {
-            // For each detector pixel
-            for (d=0; d<dx; d++)
+            // For each projection angle
+            for (p=0; p<dt; p++)
             {
-                ray = d + dx*p;
-                dist = all_dist + ray_start[ray];
-                indi = all_indi + ray_start[ray];
-                // Calculate dist*dist
-                for (n=0; n<ray_stride[ray]; n++)
+                // For each detector pixel
+                for (d=0; d<dx; d++)
                 {
-                    sum_dist2[ray] += dist[n]*dist[n];
-                }
-                if (sum_dist2[ray] != 0.0)
-                {
-                    // For each slice
-                    for (s=0; s<dy; s++)
+                    ray = d + dx*p;
+                    dist = all_dist + ray_start[ray];
+                    indi = all_indi + ray_start[ray];
+                    // Calculate dist*dist
+                    for (n=0; n<ray_stride[ray]; n++)
+                    {
+                        sum_dist2[ray] += dist[n]*dist[n];
+                    }
+                    if (sum_dist2[ray] != 0.0)
                     {
                         // Calculate simdata
                         calc_simdata(s, p, d, ngridx, ngridy, dt, dx,
@@ -201,28 +202,24 @@ art_fly_rotation(
                             simdata); // Output: simdata
                     }
                 }
-            }
-            if ((p+1) % bin == 0)
-            {
-                update = calloc(ngridx * ngridy * dy, sizeof *update);
-                nupdate = calloc(ngridx * ngridy * dy, sizeof *nupdate);
-                assert(update != NULL && nupdate != NULL);
-                // For each detector pixel
-                for (d=0; d<dx; d++)
+                if ((p+1) % bin == 0)
                 {
-                    // Simulate pooled data
-                    pool_sim = 0; pool_data = 0; pool_sum_dist2 = 0;
-                    for (b=0; b<bin; b++)
+                    update = calloc(ngridx * ngridy * dy, sizeof *update);
+                    nupdate = calloc(ngridx * ngridy * dy, sizeof *nupdate);
+                    assert(update != NULL && nupdate != NULL);
+                    // For each detector pixel
+                    for (d=0; d<dx; d++)
                     {
-                        if (mask[b] > 0) {
-                            ray = d + dx*(p-b);
-                            pool_sum_dist2 += sum_dist2[ray];
+                        // Simulate pooled data
+                        pool_sim = 0; pool_data = 0; pool_sum_dist2 = 0;
+                        for (b=0; b<bin; b++)
+                        {
+                            if (mask[b] > 0) {
+                                ray = d + dx*(p-b);
+                                pool_sum_dist2 += sum_dist2[ray];
+                            }
                         }
-                    }
-                    if (pool_sum_dist2 > 0)
-                    {
-                        // For each slice
-                        for (s=0; s<dy; s++)
+                        if (pool_sum_dist2 > 0)
                         {
                             for (b=0; b<bin; b++)
                             {
@@ -254,14 +251,14 @@ art_fly_rotation(
                             }
                         }
                     }
-                }
-                for (n=0; n<(ngridx*ngridy*dy); n++){
-                    if (nupdate[n] > 0) {
-                        recon[n] += update[n] / nupdate[n];
+                    for (n=0; n<(ngridx*ngridy*dy); n++){
+                        if (nupdate[n] > 0) {
+                            recon[n] += update[n] / nupdate[n];
+                        }
                     }
+                    free(update);
+                    free(nupdate);
                 }
-                free(update);
-                free(nupdate);
             }
         }
         free(simdata);
@@ -315,31 +312,31 @@ art_convolve(
 
     for (i=0; i<num_iter; i++)
     {
-        // For each projection angle
-        for (p=bin-1; p<dt; p++)
+        // For each slice
+        for (s=0; s<dy; s++)
         {
-            // initialize simdata to zero
-            memset(simdata, 0, dy*dt*dx*sizeof(float));
-            memset(sum_dist2, 0, sizeof *sum_dist2 * dt * dx);
-            memset(update, 0, ngridx * ngridy * dy * sizeof *update);
-            memset(nupdate, 0, ngridx * ngridy * dy * sizeof *nupdate);
-            for (b=0; b<bin; b++)
+            // For each projection angle
+            for (p=bin-1; p<dt; p++)
             {
-                // For each detector pixel
-                for (d=0; d<dx; d++)
+                // initialize simdata to zero
+                memset(simdata, 0, dy*dt*dx*sizeof(float));
+                memset(sum_dist2, 0, sizeof *sum_dist2 * dt * dx);
+                memset(update, 0, ngridx * ngridy * dy * sizeof *update);
+                memset(nupdate, 0, ngridx * ngridy * dy * sizeof *nupdate);
+                for (b=0; b<bin; b++)
                 {
-                    ray = d + dx*(p-b);
-                    dist = all_dist + ray_start[ray];
-                    indi = all_indi + ray_start[ray];
-                    // Calculate dist*dist
-                    for (n=0; n<ray_stride[ray]; n++)
+                    // For each detector pixel
+                    for (d=0; d<dx; d++)
                     {
-                        sum_dist2[ray] += dist[n]*dist[n];
-                    }
-                    if (sum_dist2[ray] != 0.0)
-                    {
-                        // For each slice
-                        for (s=0; s<dy; s++)
+                        ray = d + dx*(p-b);
+                        dist = all_dist + ray_start[ray];
+                        indi = all_indi + ray_start[ray];
+                        // Calculate dist*dist
+                        for (n=0; n<ray_stride[ray]; n++)
+                        {
+                            sum_dist2[ray] += dist[n]*dist[n];
+                        }
+                        if (sum_dist2[ray] != 0.0)
                         {
                             // Calculate simdata
                             calc_simdata(s, (p-b), d, ngridx, ngridy, dt, dx,
@@ -347,24 +344,20 @@ art_convolve(
                                 simdata); // Output: simdata
                             }
                         }
-                    }
-            }
-            // For each detector pixel
-            for (d=0; d<dx; d++)
-            {
-                // Simulate pooled data
-                pool_sim = 0; pool_data = 0; pool_sum_dist2 = 0;
-                for (b=0; b<bin; b++)
-                {
-                    if (mask[b] > 0) {
-                        ray = d + dx*(p-b);
-                        pool_sum_dist2 += sum_dist2[ray];
-                    }
                 }
-                if (pool_sum_dist2 > 0)
+                // For each detector pixel
+                for (d=0; d<dx; d++)
                 {
-                    // For each slice
-                    for (s=0; s<dy; s++)
+                    // Simulate pooled data
+                    pool_sim = 0; pool_data = 0; pool_sum_dist2 = 0;
+                    for (b=0; b<bin; b++)
+                    {
+                        if (mask[b] > 0) {
+                            ray = d + dx*(p-b);
+                            pool_sum_dist2 += sum_dist2[ray];
+                        }
+                    }
+                    if (pool_sum_dist2 > 0)
                     {
                         for (b=0; b<bin; b++)
                         {
@@ -396,10 +389,10 @@ art_convolve(
                         }
                     }
                 }
-            }
-            for (n=0; n<(ngridx*ngridy*dy); n++){
-                if (nupdate[n] > 0) {
-                    recon[n] += update[n] / nupdate[n];
+                for (n=0; n<(ngridx*ngridy*dy); n++){
+                    if (nupdate[n] > 0) {
+                        recon[n] += update[n] / nupdate[n];
+                    }
                 }
             }
         }
