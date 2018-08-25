@@ -413,7 +413,8 @@ def c_art_convolve(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['num_gridy']),
             dtype.as_c_int(kwargs['num_iter']),
             dtype.as_c_int(kwargs['bin']),
-            dtype.as_c_int_p(kwargs['mask']))
+            dtype.as_c_int_p(kwargs['mask']),
+            dtype.as_c_int(1))
 
 
 def c_bart(tomo, center, recon, theta, **kwargs):
