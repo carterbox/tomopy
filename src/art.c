@@ -70,12 +70,13 @@ art(
     for (i=0; i<num_iter; i++)
     {
         printf("art: iteration %d\n", i);
-        // initialize simdata to zero
-        float *simdata = calloc((dt*dy*dx), sizeof *simdata);
-        assert(simdata != NULL);
         // For each slice
         for (s=0; s<dy; s++)
         {
+            int ind_slice = s*ngridx*ngridy;
+            // initialize simdata to zero
+            float *simdata = calloc((dt*dx), sizeof *simdata);
+            assert(simdata != NULL);
             // For each projection angle
             for (p=0; p<dt; p++)
             {
@@ -89,22 +90,22 @@ art(
                     if (sum_dist2 != 0.0)
                     {
                         // Calculate simdata
-                        calc_simdata(s, p, d, ngridx, ngridy, dt, dx,
+                        calc_simdata(0, p, d, ngridx, ngridy, dt, dx,
                             ray_stride[ray]+1, indi, dist, recon,
                             simdata); // Output: simdata
                         // Update
                         int ind_data = d + dx*(p + dt*s);
-                        int ind_recon = s*ngridx*ngridy;
-                        float upd = (data[ind_data]-simdata[ind_data])/sum_dist2;
+                        int ind_sim = d + dx*p;
+                        float upd = (data[ind_data]-simdata[ind_sim])/sum_dist2;
                         for (n=0; n<ray_stride[ray]; n++)
                         {
-                            recon[indi[n]+ind_recon] += upd*dist[n];
+                            recon[indi[n]+ind_slice] += upd*dist[n];
                         }
                     }
                 }
             }
+            free(simdata);
         }
-        free(simdata);
     }
     free(ray_start);
     free(ray_stride);
@@ -171,15 +172,16 @@ art_convolve(
         // For each slice
         for (s=0; s<dy; s++)
         {
+            int ind_slice = s*ngridx*ngridy;
             // For each projection angle
             for (p=bin-1; p<dt; p+=step)
             {
                 // Initialize buffers to zero
                 // TODO: Remove dy from simdata, update, nupdate because slice is outerloop
-                float *simdata = calloc(dy*dt*dx, sizeof *simdata);
+                float *simdata = calloc(dt*dx, sizeof *simdata);
                 assert(simdata != NULL);
-                float *update = calloc(ngridx * ngridy * dy, sizeof *update);
-                int *nupdate = calloc(ngridx * ngridy * dy, sizeof *nupdate);
+                float *update = calloc(ngridx * ngridy, sizeof *update);
+                float *nupdate = calloc(ngridx * ngridy, sizeof *nupdate);
                 assert(update != NULL && nupdate != NULL);
                 float *pool_sim = calloc(dx, sizeof *pool_sim);
                 float *pool_data = calloc(dx, sizeof *pool_data);
@@ -201,13 +203,14 @@ art_convolve(
                             {
                                 int p1 = p-b;
                                 // Calculate simdata
-                                calc_simdata(s, p1, d, ngridx, ngridy, dt, dx,
+                                calc_simdata(0, p1, d, ngridx, ngridy, dt, dx,
                                     ray_stride[ray]+1, indi, dist, recon,
                                     simdata); // Output: simdata
                                 // Calculate pool data
                                 pool_sum_dist2[d] += all_sum_dist2[ray];
                                 int ind_data = d + dx*(p1 + dt*s);
-                                pool_sim[d] += simdata[ind_data];
+                                int ind_sim = d + dx*p1;
+                                pool_sim[d] += simdata[ind_sim];
                                 pool_data[d] += data[ind_data];
                             }
                         }
@@ -226,21 +229,20 @@ art_convolve(
                                 float pool_upd = (pool_data[d] - pool_sim[d]) / pool_sum_dist2[d];
                                 // Update
                                 int ray = d + dx*(p-b);
-                                float* dist = all_dist + ray_start[ray];
+                                float *dist = all_dist + ray_start[ray];
                                 int *indi = all_indi + ray_start[ray];
-                                int ind_recon = s*ngridx*ngridy;
                                 for (n=0; n<ray_stride[ray]; n++)
                                 {
-                                    update[indi[n]+ind_recon] += pool_upd*dist[n];
-                                    nupdate[indi[n]+ind_recon] += 1;
+                                    update[indi[n]] += pool_upd*dist[n];
+                                    nupdate[indi[n]] += dist[n];
                                 }
                             }
                         }
                     }
                 }
-                for (n=0; n<(ngridx*ngridy*dy); n++){
+                for (n=0; n<(ngridx*ngridy); n++){
                     if (nupdate[n] > 0) {
-                        recon[n] += update[n] / nupdate[n];
+                        recon[ind_slice + n] += update[n] / nupdate[n];
                     }
                 }
                 free(simdata);
