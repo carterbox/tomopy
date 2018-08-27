@@ -50,9 +50,9 @@ sirt(
 	const float *center, const float *theta,
     float *recon, int ngridx, int ngridy, int num_iter)
 {
-    int i, s, p, d, n; // preferred loop order
+    // int i, s, p, d, n; // preferred loop order
     // For each slice
-    for (s=0; s<dy; s++)
+    for (int s=0; s<dy; s++)
     {
         int ind_slice = s*ngridx*ngridy;
         float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
@@ -71,17 +71,17 @@ sirt(
         free(gridx);
         free(gridy);
         // For each iteration
-        for (i=0; i<num_iter; i++)
+        for (int i=0; i<num_iter; i++)
         {
             float *simdata = calloc(dt*dx, sizeof *simdata);
             float *sum_dist = calloc(ngridx*ngridy, sizeof *sum_dist);
             float *update = calloc(ngridx*ngridy, sizeof *update);
             assert(simdata != NULL && sum_dist != NULL && update != NULL);
             // For each projection angle
-            for (p=0; p<dt; p++)
+            for (int p=0; p<dt; p++)
             {
                 // For each detector pixel
-                for (d=0; d<dx; d++)
+                for (int d=0; d<dx; d++)
                 {
                     int ray = d + dx*p;
                     float *dist = all_dist + ray_start[ray];
@@ -97,7 +97,7 @@ sirt(
                         int ind_data = d + dx*(p + dt*s);
                         int ind_sim = d + dx*p;
                         float upd = (data[ind_data]-simdata[ind_sim])/sum_dist2;
-                        for (n=0; n<ray_stride[ray]; n++)
+                        for (int n=0; n<ray_stride[ray]; n++)
                         {
                             update[indi[n]] += upd*dist[n];
                             sum_dist[indi[n]] += dist[n];
@@ -105,7 +105,7 @@ sirt(
                     }
                 }
             }
-            for (n = 0; n < ngridx*ngridy; n++) {
+            for (int n = 0; n < ngridx*ngridy; n++) {
                 if (sum_dist[n] > 0) {
                     recon[n+ind_slice] += update[n]/sum_dist[n];
                 }
@@ -144,9 +144,9 @@ sirt_convolve(
 {
     int step = 1;
     assert(step > 0 && "Step must be positive or else infinite loop.");
-    int i, s, p, b, d, n; // preferred loop order
+    // int i, s, p, b, d, n; // preferred loop order
     // For each slice
-    for (s=0; s<dy; s++)
+    for (int s=0; s<dy; s++)
     {
         int ind_slice = s*ngridx*ngridy;
         float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
@@ -165,7 +165,7 @@ sirt_convolve(
         free(gridx);
         free(gridy);
         // For each iteration
-        for (i=0; i<num_iter; i++)
+        for (int i=0; i<num_iter; i++)
         {
             float *simdata = calloc(dt*dx, sizeof *simdata);
             assert(simdata != NULL);
@@ -173,10 +173,10 @@ sirt_convolve(
             float *nupdate = calloc(ngridx * ngridy, sizeof *nupdate);
             assert(update != NULL && nupdate != NULL);
             // For each projection angle, simulate data acquisition
-            for (p=0; p<dt; p++)
+            for (int p=0; p<dt; p++)
             {
                 // For each detector pixel
-                for (d=0; d<dx; d++)
+                for (int d=0; d<dx; d++)
                 {
                     int ray = d + dx*p;
                     float *dist = all_dist + ray_start[ray];
@@ -191,7 +191,7 @@ sirt_convolve(
                 }
             }
             // For each projection angle, pool data and compute updates
-            for (p=bin-1; p<dt; p+=step)
+            for (int p=bin-1; p<dt; p+=step)
             {
                 // Initialize buffers to zero
                 float *pool_sim = calloc(dx, sizeof *pool_sim);
@@ -200,12 +200,12 @@ sirt_convolve(
                 assert(pool_sim != NULL && pool_data != NULL
                        && pool_sum_dist2 != NULL);
                 // For each code element
-                for (b=0; b<bin; b++)
+                for (int b=0; b<bin; b++)
                 {
                     if (mask[b] > 0)
                     {
                         // For each detector pixel
-                        for (d=0; d<dx; d++)
+                        for (int d=0; d<dx; d++)
                         {
                             int ray = d + dx*(p-b);
                             float *dist = all_dist + ray_start[ray];
@@ -224,11 +224,11 @@ sirt_convolve(
                     }
                 }
                 // For each code element
-                for (b=0; b<bin; b++)
+                for (int b=0; b<bin; b++)
                 {
                     if (mask[b] > 0) {
                         // For each detector pixel
-                        for (d=0; d<dx; d++)
+                        for (int d=0; d<dx; d++)
                         {
                             if (pool_sum_dist2[d] > 0)
                             {
@@ -238,7 +238,7 @@ sirt_convolve(
                                 int ray = d + dx*(p-b);
                                 float *dist = all_dist + ray_start[ray];
                                 int *indi = all_indi + ray_start[ray];
-                                for (n=0; n<ray_stride[ray]; n++)
+                                for (int n=0; n<ray_stride[ray]; n++)
                                 {
                                     update[indi[n]] += pool_upd*dist[n];
                                     nupdate[indi[n]] += dist[n];
@@ -251,7 +251,7 @@ sirt_convolve(
                 free(pool_data);
                 free(pool_sum_dist2);
             }
-            for (n=0; n<(ngridx*ngridy); n++){
+            for (int n=0; n<(ngridx*ngridy); n++){
                 if (nupdate[n] > 0) {
                     recon[ind_slice + n] += update[n] / nupdate[n];
                 }
