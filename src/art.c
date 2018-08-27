@@ -49,31 +49,29 @@ art(
     const float *center, const float *theta,
     float *recon, int ngridx, int ngridy, int num_iter)
 {
-    float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
-    float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
-    assert(gridx != NULL && gridy != NULL);
-    float mov;
-    preprocessing(ngridx, ngridy, dx, center[0],
-        &mov, gridx, gridy); // Outputs: mov, gridx, gridy
-
-    float *all_dist, *all_sum_dist2;
-    int *all_indi, *ray_start, *ray_stride;
-    compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
-        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
-        &all_sum_dist2);
-        // Outputs: ray_start, ray_stride, all_indi, all_dist
-
-    free(gridx);
-    free(gridy);
-
     int i, s, p, d, n; // preferred loop order
-    for (i=0; i<num_iter; i++)
+    // For each slice
+    for (s=0; s<dy; s++)
     {
-        printf("art: iteration %d\n", i);
-        // For each slice
-        for (s=0; s<dy; s++)
+        int ind_slice = s*ngridx*ngridy;
+        float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
+        float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
+        assert(gridx != NULL && gridy != NULL);
+        float mov;
+        preprocessing(ngridx, ngridy, dx, center[s],
+            &mov, gridx, gridy);
+            // Outputs: mov, gridx, gridy
+        float *all_dist, *all_sum_dist2;
+        int *all_indi, *ray_start, *ray_stride;
+        compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
+            ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
+            &all_sum_dist2);
+            // Outputs: ray_start, ray_stride, all_indi, all_dist, all_sum_dist2
+        free(gridx);
+        free(gridy);
+        // For each iteration
+        for (i=0; i<num_iter; i++)
         {
-            int ind_slice = s*ngridx*ngridy;
             // initialize simdata to zero
             float *simdata = calloc((dt*dx), sizeof *simdata);
             assert(simdata != NULL);
@@ -106,12 +104,12 @@ art(
             }
             free(simdata);
         }
+        free(ray_start);
+        free(ray_stride);
+        free(all_indi);
+        free(all_dist);
+        free(all_sum_dist2);
     }
-    free(ray_start);
-    free(ray_stride);
-    free(all_indi);
-    free(all_dist);
-    free(all_sum_dist2);
 }
 
 
@@ -148,36 +146,33 @@ art_convolve(
     int bin, int *mask, int const step)
 {
     assert(step > 0 && "Step must be positive or else infinite loop.");
-    float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
-    float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
-    assert(gridx != NULL && gridy != NULL);
-    float mov;
-    preprocessing(ngridx, ngridy, dx, center[0],
-        &mov, gridx, gridy); // Outputs: mov, gridx, gridy
-
-    float *all_dist, *all_sum_dist2;
-    int *all_indi, *ray_start, *ray_stride;
-    compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
-        ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
-        &all_sum_dist2);
-        // Outputs: ray_start, ray_stride, all_indi, all_dist
-
-    free(gridx);
-    free(gridy);
-
     int i, s, p, b, d, n; // preferred loop order
-    for (i=0; i<num_iter; i++)
+    // For each slice
+    for (s=0; s<dy; s++)
     {
-        printf("art fly: iteration %d\n", i);
-        // For each slice
-        for (s=0; s<dy; s++)
+        int ind_slice = s*ngridx*ngridy;
+        float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
+        float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
+        assert(gridx != NULL && gridy != NULL);
+        float mov;
+        preprocessing(ngridx, ngridy, dx, center[s],
+            &mov, gridx, gridy);
+            // Outputs: mov, gridx, gridy
+        float *all_dist, *all_sum_dist2;
+        int *all_indi, *ray_start, *ray_stride;
+        compute_indices_and_lengths(theta, dt, dx, gridx, gridy, mov,
+            ngridx, ngridy, &ray_start, &ray_stride, &all_indi, &all_dist,
+            &all_sum_dist2);
+            // Outputs: ray_start, ray_stride, all_indi, all_dist
+        free(gridx);
+        free(gridy);
+        // For each iteration
+        for (i=0; i<num_iter; i++)
         {
-            int ind_slice = s*ngridx*ngridy;
             // For each projection angle
             for (p=bin-1; p<dt; p+=step)
             {
                 // Initialize buffers to zero
-                // TODO: Remove dy from simdata, update, nupdate because slice is outerloop
                 float *simdata = calloc(dt*dx, sizeof *simdata);
                 assert(simdata != NULL);
                 float *update = calloc(ngridx * ngridy, sizeof *update);
@@ -253,10 +248,10 @@ art_convolve(
                 free(pool_sum_dist2);
             }
         }
+        free(ray_start);
+        free(ray_stride);
+        free(all_indi);
+        free(all_dist);
+        free(all_sum_dist2);
     }
-    free(ray_start);
-    free(ray_stride);
-    free(all_indi);
-    free(all_dist);
-    free(all_sum_dist2);
 }
