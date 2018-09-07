@@ -53,7 +53,7 @@ art(
     // For each slice
     for (int s=0; s<dy; s++)
     {
-        int ind_slice = s*ngridx*ngridy;
+        float *recon_slice = recon + s*ngridx*ngridy;
         float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
         float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
         assert(gridx != NULL && gridy != NULL);
@@ -89,7 +89,7 @@ art(
                     {
                         // Calculate simdata
                         calc_simdata(0, p, d, ngridx, ngridy, dt, dx,
-                            ray_stride[ray]+1, indi, dist, recon,
+                            ray_stride[ray]+1, indi, dist, recon_slice,
                             simdata); // Output: simdata
                         // Update
                         int ind_data = d + dx*(p + dt*s);
@@ -97,7 +97,7 @@ art(
                         float upd = (data[ind_data]-simdata[ind_sim])/sum_dist2;
                         for (int n=0; n<ray_stride[ray]; n++)
                         {
-                            recon[indi[n]+ind_slice] += upd*dist[n];
+                            recon_slice[indi[n]] += upd*dist[n];
                         }
                     }
                 }
@@ -150,7 +150,7 @@ art_convolve(
     // For each slice
     for (int s=0; s<dy; s++)
     {
-        int ind_slice = s*ngridx*ngridy;
+        float *recon_slice = recon + s*ngridx*ngridy;
         float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
         float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
         assert(gridx != NULL && gridy != NULL);
@@ -199,7 +199,7 @@ art_convolve(
                                 int p1 = p-b;
                                 // Calculate simdata
                                 calc_simdata(0, p1, d, ngridx, ngridy, dt, dx,
-                                    ray_stride[ray]+1, indi, dist, recon,
+                                    ray_stride[ray]+1, indi, dist, recon_slice,
                                     simdata); // Output: simdata
                                 // Calculate pool data
                                 pool_sum_dist2[d] += all_sum_dist2[ray];
@@ -237,7 +237,7 @@ art_convolve(
                 }
                 for (int n=0; n<(ngridx*ngridy); n++){
                     if (nupdate[n] > 0) {
-                        recon[ind_slice + n] += update[n] / nupdate[n];
+                        recon_slice[n] += update[n] / nupdate[n];
                     }
                 }
                 free(simdata);

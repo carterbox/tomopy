@@ -54,7 +54,7 @@ sirt(
     // For each slice
     for (int s=0; s<dy; s++)
     {
-        int ind_slice = s*ngridx*ngridy;
+        float *recon_slice = recon + s*ngridx*ngridy;
         float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
         float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
         assert(gridx != NULL && gridy != NULL);
@@ -91,7 +91,7 @@ sirt(
                     {
                         // Calculate simdata
                         calc_simdata(0, p, d, ngridx, ngridy, dt, dx,
-                            ray_stride[ray]+1, indi, dist, recon,
+                            ray_stride[ray]+1, indi, dist, recon_slice,
                             simdata); // Output: simdata
                         // Update
                         int ind_data = d + dx*(p + dt*s);
@@ -107,7 +107,7 @@ sirt(
             }
             for (int n = 0; n < ngridx*ngridy; n++) {
                 if (sum_dist[n] > 0) {
-                    recon[n+ind_slice] += update[n]/sum_dist[n];
+                    recon_slice[n] += update[n]/sum_dist[n];
                 }
             }
             free(simdata);
@@ -148,7 +148,7 @@ sirt_convolve(
     // For each slice
     for (int s=0; s<dy; s++)
     {
-        int ind_slice = s*ngridx*ngridy;
+        float *recon_slice = recon + s*ngridx*ngridy;
         float *gridx = (float *)malloc((ngridx+1)*sizeof(float));
         float *gridy = (float *)malloc((ngridy+1)*sizeof(float));
         assert(gridx != NULL && gridy != NULL);
@@ -185,7 +185,7 @@ sirt_convolve(
                     {
                         // Calculate simdata
                         calc_simdata(0, p, d, ngridx, ngridy, dt, dx,
-                            ray_stride[ray]+1, indi, dist, recon,
+                            ray_stride[ray]+1, indi, dist, recon_slice,
                             simdata); // Output: simdata
                     }
                 }
@@ -253,7 +253,7 @@ sirt_convolve(
             }
             for (int n=0; n<(ngridx*ngridy); n++){
                 if (nupdate[n] > 0) {
-                    recon[ind_slice + n] += update[n] / nupdate[n];
+                    recon_slice[n] += update[n] / nupdate[n];
                 }
             }
             free(simdata);
