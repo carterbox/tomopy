@@ -422,5 +422,5 @@ def _get_algorithm_kwargs(shape):
         'ind_block': np.arange(0, dt, dtype=np.float32),  # TODO: I think this should be int
         'options': {},
         'bin': 1,
-        'mask': np.ones(1, dtype='int32'),
+        'mask': np.ones(1, dtype='bool'),
     }

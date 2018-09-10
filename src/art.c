@@ -113,40 +113,51 @@ art(
 }
 
 
-/**
- * @param data Measurements collected at each position. The size of data is dy, dt, dx
- * @param bin The number of angles to be grouped together.
- * @param mask The weights of each of the angles, i.e. the convolution kernel.
- * @param theta The angles at which measurements were collected the size is dt
-
- Given a series of measurements, [data], collected at angles, [theta]. Pool
- adjacent measurements together using a convolutional [mask] of size [bin].
-
- If the size of [data] is 5 and [bin] is 4, then the [mask] is evaluated at 2
- positions: indices 0 and 1.
- */
 void
 art_fly_rotation(
     const float *data, int dy, int dt, int dx,
     const float *center, const float *theta,
     float *recon, int ngridx, int ngridy, int num_iter,
-    int bin, int *mask)
+    int nmask, int *mask)
 {
     art_convolve(data, dy, dt, dx,
         center, theta,
         recon, ngridx, ngridy, num_iter,
-        bin, mask, bin);
+        nmask, mask, nmask, nmask);
 }
 
+/**
+Given a series of convolved measurements, [data], collected at angles,
+[theta]. Pool adjacent angles together using a convolutional [mask] of
+size [nmask].
+
+Example
+-------
+[raw_data] = [3.0, 1.0, 2.0, 0.0, 2.0, 0.0, 0.0]
+[mask]     = [true, true]
+[nmask]    = 2
+[data]     = [4.0, 3.0, 2.0, 2.0, 2.0, 0.0, 3.0]
+
+Note about the convolution mask:
+    1. It is left aligned.
+    2. It wraps around from the left to the right edge.
+
+Then to reconstruct, we compare [data] with mask * simdata([theta]).
+
+@param data Measurements collected at each position. The size of data is
+    dy, dt, dx. The data is preconvolved.
+@param nmask The number of angles to be grouped together.
+@param mask A boolean mask for the angles, i.e. the convolution kernel.
+@param theta The angles at which measurements were collected the size is dt
+ */
 void
 art_convolve(
     const float *data, int dy, int dt, int dx,
     const float *center, const float *theta,
     float *recon, int ngridx, int ngridy, int num_iter,
-    int bin, int *mask, int const step)
+    int nmask, bool *mask, int *ind_block)
 {
-    assert(step > 0 && "Step must be positive or else infinite loop.");
-    // int i, s, p, b, d, n; // preferred loop order
+    // int s, i, p, b, d, n; // preferred loop order
     // For each slice
     for (int s=0; s<dy; s++)
     {
@@ -170,8 +181,9 @@ art_convolve(
         for (int i=0; i<num_iter; i++)
         {
             // For each projection angle
-            for (int p=bin-1; p<dt; p+=step)
+            for (int k=0; k<dt; k++)
             {
+                int p = ind_block[k];
                 // Initialize buffers to zero
                 float *simdata = calloc(dt*dx, sizeof *simdata);
                 assert(simdata != NULL);
@@ -179,51 +191,51 @@ art_convolve(
                 float *nupdate = calloc(ngridx * ngridy, sizeof *nupdate);
                 assert(update != NULL && nupdate != NULL);
                 float *pool_sim = calloc(dx, sizeof *pool_sim);
-                float *pool_data = calloc(dx, sizeof *pool_data);
                 float *pool_sum_dist2 = calloc(dx, sizeof *pool_sum_dist2);
-                assert(pool_sim != NULL && pool_data != NULL
-                       && pool_sum_dist2 != NULL);
+                assert(pool_sim != NULL && pool_sum_dist2 != NULL);
                 // For each code element
-                for (int b=0; b<bin; b++)
+                for (int b=0; b<nmask; b++)
                 {
-                    if (mask[b] > 0)
+                    if (mask[b])
                     {
+                        int p1 = (p+b) % dt;
                         // For each detector pixel
                         for (int d=0; d<dx; d++)
                         {
-                            int ray = d + dx*(p-b);
+                            int ray = d + dx*(p1);
                             float *dist = all_dist + ray_start[ray];
                             int *indi = all_indi + ray_start[ray];
                             if (all_sum_dist2[ray] != 0.0)
                             {
-                                int p1 = p-b;
                                 // Calculate simdata
                                 calc_simdata(0, p1, d, ngridx, ngridy, dt, dx,
                                     ray_stride[ray]+1, indi, dist, recon_slice,
                                     simdata); // Output: simdata
                                 // Calculate pool data
                                 pool_sum_dist2[d] += all_sum_dist2[ray];
-                                int ind_data = d + dx*(p1 + dt*s);
                                 int ind_sim = d + dx*p1;
                                 pool_sim[d] += simdata[ind_sim];
-                                pool_data[d] += data[ind_data];
                             }
                         }
                     }
                 }
                 // For each code element
-                for (int b=0; b<bin; b++)
+                for (int b=0; b<nmask; b++)
                 {
-                    if (mask[b] > 0) {
+                    if (mask[b])
+                    {
+                        int p1 = (p+b) % dt;
                         // For each detector pixel
                         for (int d=0; d<dx; d++)
                         {
                             if (pool_sum_dist2[d] > 0)
                             {
                                 // Compute update
-                                float pool_upd = (pool_data[d] - pool_sim[d]) / pool_sum_dist2[d];
+                                int ind_data = d + dx*(p1 + dt*s);
+                                float pool_upd = (data[ind_data] - pool_sim[d])
+                                                  / pool_sum_dist2[d];
                                 // Update
-                                int ray = d + dx*(p-b);
+                                int ray = d + dx*(p1);
                                 float *dist = all_dist + ray_start[ray];
                                 int *indi = all_indi + ray_start[ray];
                                 for (int n=0; n<ray_stride[ray]; n++)
@@ -244,7 +256,6 @@ art_convolve(
                 free(update);
                 free(nupdate);
                 free(pool_sim);
-                free(pool_data);
                 free(pool_sum_dist2);
             }
         }

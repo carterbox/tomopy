@@ -127,12 +127,12 @@ void
 sirt_fly_rotation(
     const float *data, int dy, int dt, int dx,
     const float *center, const float *theta,
-    float *recon, int ngridx, int ngridy, int num_iter, int bin, int *mask)
+    float *recon, int ngridx, int ngridy, int num_iter, int nmask, int *mask)
 {
     sirt_convolve(data, dy, dt, dx,
         center, theta,
-        recon, ngridx, ngridy,
-        num_iter, bin, mask);
+        recon, ngridx, ngridy, num_iter,
+        nmask, mask);
 }
 
 
@@ -140,7 +140,8 @@ void
 sirt_convolve(
     const float *data, int dy, int dt, int dx,
     const float *center, const float *theta,
-    float *recon, int ngridx, int ngridy, int num_iter, int bin, int *mask)
+    float *recon, int ngridx, int ngridy, int num_iter,
+    int nmask, bool *mask)
 {
     int step = 1;
     assert(step > 0 && "Step must be positive or else infinite loop.");
@@ -191,51 +192,49 @@ sirt_convolve(
                 }
             }
             // For each projection angle, pool data and compute updates
-            for (int p=bin-1; p<dt; p+=step)
+            for (int p=0; p<dt; p+=step)
             {
                 // Initialize buffers to zero
                 float *pool_sim = calloc(dx, sizeof *pool_sim);
-                float *pool_data = calloc(dx, sizeof *pool_data);
                 float *pool_sum_dist2 = calloc(dx, sizeof *pool_sum_dist2);
-                assert(pool_sim != NULL && pool_data != NULL
-                       && pool_sum_dist2 != NULL);
+                assert(pool_sim != NULL && pool_sum_dist2 != NULL);
                 // For each code element
-                for (int b=0; b<bin; b++)
+                for (int b=0; b<nmask; b++)
                 {
-                    if (mask[b] > 0)
+                    if (mask[b])
                     {
+                        int p1 = (p+b) % dt;
                         // For each detector pixel
                         for (int d=0; d<dx; d++)
                         {
-                            int ray = d + dx*(p-b);
-                            float *dist = all_dist + ray_start[ray];
-                            int *indi = all_indi + ray_start[ray];
+                            int ray = d + dx*(p1);
                             if (all_sum_dist2[ray] != 0.0)
                             {
-                                int p1 = p-b;
                                 // Calculate pool data
                                 pool_sum_dist2[d] += all_sum_dist2[ray];
-                                int ind_data = d + dx*(p1 + dt*s);
                                 int ind_sim = d + dx*p1;
                                 pool_sim[d] += simdata[ind_sim];
-                                pool_data[d] += data[ind_data];
                             }
                         }
                     }
                 }
                 // For each code element
-                for (int b=0; b<bin; b++)
+                for (int b=0; b<nmask; b++)
                 {
-                    if (mask[b] > 0) {
+                    if (mask[b])
+                    {
+                        int p1 = (p+b) % dt;
                         // For each detector pixel
                         for (int d=0; d<dx; d++)
                         {
                             if (pool_sum_dist2[d] > 0)
                             {
                                 // Compute update
-                                float pool_upd = (pool_data[d] - pool_sim[d]) / pool_sum_dist2[d];
+                                int ind_data = d + dx*(p1 + dt*s);
+                                float pool_upd = (data[ind_data] - pool_sim[d])
+                                                  / pool_sum_dist2[d];
                                 // Update
-                                int ray = d + dx*(p-b);
+                                int ray = d + dx*(p1);
                                 float *dist = all_dist + ray_start[ray];
                                 int *indi = all_indi + ray_start[ray];
                                 for (int n=0; n<ray_stride[ray]; n++)
@@ -248,7 +247,6 @@ sirt_convolve(
                     }
                 }
                 free(pool_sim);
-                free(pool_data);
                 free(pool_sum_dist2);
             }
             for (int n=0; n<(ngridx*ngridy); n++){

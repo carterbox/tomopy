@@ -400,7 +400,7 @@ def c_art_convolve(tomo, center, recon, theta, **kwargs):
         dy, dt, dx = tomo.shape
 
     theta = np.tile(theta, 2)
-    LIB_TOMOPY.art_fly_rotation.restype = dtype.as_c_void_p()
+    LIB_TOMOPY.art_convolve.restype = dtype.as_c_void_p()
     return LIB_TOMOPY.art_convolve(
             dtype.as_c_float_p(tomo),
             dtype.as_c_int(dy),
@@ -413,8 +413,9 @@ def c_art_convolve(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['num_gridy']),
             dtype.as_c_int(kwargs['num_iter']),
             dtype.as_c_int(kwargs['bin']),
-            dtype.as_c_int_p(kwargs['mask']),
-            dtype.as_c_int(1))
+            dtype.as_c_bool_p(kwargs['mask']),
+            dtype.as_c_int_p(porder),
+            )
 
 
 def c_bart(tomo, center, recon, theta, **kwargs):
@@ -789,7 +790,7 @@ def c_sirt_convolve(tomo, center, recon, theta, **kwargs):
     else:
         dy, dt, dx = tomo.shape
 
-    LIB_TOMOPY.sirt_fly_rotation.restype = dtype.as_c_void_p()
+    LIB_TOMOPY.sirt_convolve.restype = dtype.as_c_void_p()
     return LIB_TOMOPY.sirt_convolve(
             dtype.as_c_float_p(tomo),
             dtype.as_c_int(dy),
@@ -802,7 +803,7 @@ def c_sirt_convolve(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['num_gridy']),
             dtype.as_c_int(kwargs['num_iter']),
             dtype.as_c_int(kwargs['bin']),
-            dtype.as_c_int_p(kwargs['mask']))
+            dtype.as_c_bool_p(kwargs['mask']))
 
 
 def c_vector(tomo, center, recon1, recon2, theta, **kwargs):
