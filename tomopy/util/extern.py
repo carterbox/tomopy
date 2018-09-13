@@ -391,6 +391,37 @@ def c_art_fly_rotation(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int_p(kwargs['mask']))
 
 
+def FFT_order(x):
+    """Reorders x according to the 1D Cooley-Tukey FFT access pattern"""
+    x = np.asarray(x, dtype=float)
+    N = x.shape[0]
+    if N % 2 > 0:
+        raise ValueError("size of x must be a power of 2")
+    elif N <= 2:  # this cutoff should be optimized
+        return x
+    else:
+        X_even = FFT_order(x[::2])
+        X_odd = FFT_order(x[1::2])
+        return np.concatenate([X_even, X_odd])
+
+
+def multilevel_order(L):
+    """Returns an order of length L according to the multilevel scheme by
+    Guan and Gordon (1994)
+    """
+    if L % 2 > 0:
+        raise ValueError("L must be a power of 2")
+    N = 2
+    order = list()
+    order.append(np.array([0, 1]) / 2)
+    level = 4
+    while N < L:
+        order.append(FFT_order(np.arange(1, level, 2)) / level)
+        N += level / 2
+        level *= 2
+    return (np.concatenate(order) * L).astype('int32')
+
+
 def c_art_convolve(tomo, center, recon, theta, **kwargs):
     if len(tomo.shape) == 2:
         # no y-axis (only one slice)
@@ -398,6 +429,10 @@ def c_art_convolve(tomo, center, recon, theta, **kwargs):
         dt, dx = tomo.shape
     else:
         dy, dt, dx = tomo.shape
+
+    p = multilevel_order(dt // 2)
+    porder = np.concatenate([p, p + dt // 2])
+    # print(porder)
 
     theta = np.tile(theta, 2)
     LIB_TOMOPY.art_convolve.restype = dtype.as_c_void_p()
