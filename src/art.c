@@ -120,10 +120,13 @@ art_fly_rotation(
     float *recon, int ngridx, int ngridy, int num_iter,
     int nmask, int *mask)
 {
+    return;
+    int *something;
+    bool *bmask;
     art_convolve(data, dy, dt, dx,
         center, theta,
         recon, ngridx, ngridy, num_iter,
-        nmask, mask, nmask, nmask);
+        nmask, bmask, something);
 }
 
 /**

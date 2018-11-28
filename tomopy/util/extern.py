@@ -430,8 +430,9 @@ def c_art_convolve(tomo, center, recon, theta, **kwargs):
     else:
         dy, dt, dx = tomo.shape
 
-    p = multilevel_order(dt // 2)
-    porder = np.concatenate([p, p + dt // 2])
+    p = multilevel_order(dt)
+    # porder = np.concatenate([p, p + dt // 2])
+    porder = p.astype(np.int32)
     # print(porder)
 
     theta = np.tile(theta, 2)

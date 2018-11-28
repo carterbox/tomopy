@@ -23,9 +23,6 @@
 *.egg
 *.egg-info
 dist
-include
-share
-build
 eggs
 parts
 bin

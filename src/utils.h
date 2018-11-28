@@ -170,6 +170,13 @@ art_fly_rotation(
     int *mask);
 
 void DLL
+art_convolve(
+    const float *data, int dy, int dt, int dx,
+    const float *center, const float *theta,
+    float *recon, int ngridx, int ngridy, int num_iter,
+    int nmask, bool *mask, int *ind_block);
+
+void DLL
 bart(
     const float *data,
     int dy,
