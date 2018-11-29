@@ -222,23 +222,20 @@ art_convolve(
                         }
                     }
                 }
-                // For each code element
-                for (int b=0; b<nmask; b++)
+                // For each detector pixel
+                for (int d=0; d<dx; d++)
                 {
-                    if (mask[b])
+                    if (pool_sum_dist2[d] > 0)
                     {
-                        int p1 = (p+b) % dt;
-                        // For each detector pixel
-                        for (int d=0; d<dx; d++)
+                        int ind_data = d + dx*(p + dt*s);
+                        float pool_upd = (data[ind_data] - pool_sim[d])
+                                         / pool_sum_dist2[d];
+                        // For each code element
+                        for (int b=0; b<nmask; b++)
                         {
-                            if (pool_sum_dist2[d] > 0)
+                            if (mask[b])
                             {
-                                // Compute update
-                                int ind_data = d + dx*(p1 + dt*s);
-                                float pool_upd = (data[ind_data] - pool_sim[d])
-                                                  / pool_sum_dist2[d];
-                                // Update
-                                int ray = d + dx*(p1);
+                                int ray = d + dx*((p+b) % dt);
                                 float *dist = all_dist + ray_start[ray];
                                 int *indi = all_indi + ray_start[ray];
                                 for (int n=0; n<ray_stride[ray]; n++)
