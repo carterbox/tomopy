@@ -339,3 +339,200 @@ project3(const float* objx, const float* objy, const float* objz, int oy,
     free(dist);
     free(indi);
 }
+
+void
+project_fly_rotation(
+    const float *obj, int oy, int ox, int oz,
+    float *data, int dy, int dt, int dx,
+    const float *center, const float *theta, int bin, int *mask)
+{
+    float *gridx = (float *)malloc((ox+1)*sizeof(float));
+    float *gridy = (float *)malloc((oz+1)*sizeof(float));
+    float *coordx = (float *)malloc((oz+1)*sizeof(float));
+    float *coordy = (float *)malloc((ox+1)*sizeof(float));
+    float *ax = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *ay = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *bx = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *by = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *coorx = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *coory = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *dist = (float *)malloc((ox+oz+1)*sizeof(float));
+    int *indi = (int *)malloc((ox+oz+1)*sizeof(int));
+
+    assert(coordx != NULL && coordy != NULL &&
+        ax != NULL && ay != NULL && by != NULL && bx != NULL &&
+        coorx != NULL && coory != NULL && dist != NULL && indi != NULL);
+
+    int s, p, d, b;
+    int quadrant;
+    float theta_p, sin_p, cos_p;
+    float mov, xi, yi;
+    int asize, bsize, csize;
+
+    preprocessing(ox, oz, dx, center[0],
+        &mov, gridx, gridy); // Outputs: mov, gridx, gridy
+
+    // For each projection angle
+    for (p=0; p<dt; p++)
+    {
+        // For each pixel
+        for (d=0; d<dx; d++)
+        {
+            // For each bin
+            for (b=0; b<bin; b++)
+            {
+                if (mask[b]==1) {
+                    // Calculate the sin and cos values
+                    // of the projection angle and find
+                    // at which quadrant on the cartesian grid.
+                    theta_p = fmod(theta[p+b], 2*M_PI);
+                    quadrant = calc_quadrant(theta_p);
+                    sin_p = sinf(theta_p);
+                    cos_p = cosf(theta_p);
+
+                    // Calculate coordinates
+                    xi = -ox-oz;
+                    yi = (1-dx)/2.0+d+mov;
+
+                    calc_coords(
+                        ox, oz, xi, yi, sin_p, cos_p, gridx, gridy,
+                        coordx, coordy);
+
+                    // Merge the (coordx, gridy) and (gridx, coordy)
+                    trim_coords(
+                        ox, oz, coordx, coordy, gridx, gridy,
+                        &asize, ax, ay, &bsize, bx, by);
+
+                    // Sort the array of intersection points (ax, ay) and
+                    // (bx, by). The new sorted intersection points are
+                    // stored in (coorx, coory). Total number of points
+                    // are csize.
+                    sort_intersections(
+                        quadrant, asize, ax, ay, bsize, bx, by,
+                        &csize, coorx, coory);
+
+                    // Calculate the distances (dist) between the
+                    // intersection points (coorx, coory). Find the
+                    // indices of the pixels on the object grid.
+                    calc_dist(
+                        ox, oz, csize, coorx, coory,
+                        indi, dist);
+
+                    // For each slice
+                    for (s=0; s<dy; s++)
+                    {
+                        // Calculate simdata
+                        calc_simdata(s, p, d, ox, oz, dt, dx,
+                            csize, indi, dist, obj,
+                            data); // Output: simulated data
+                    }
+                }
+            }
+        }
+    }
+
+    free(gridx);
+    free(gridy);
+    free(coordx);
+    free(coordy);
+    free(ax);
+    free(ay);
+    free(bx);
+    free(by);
+    free(coorx);
+    free(coory);
+    free(dist);
+    free(indi);
+}
+
+void
+project_fly_rotation_interlaced(
+    const float *obj, int oy, int ox, int oz,
+    float *data, int dy, int dt, int dx,
+    const float *center, const float *theta, int bin, int *mask)
+{
+    float *gridx = (float *)malloc((ox+1)*sizeof(float));
+    float *gridy = (float *)malloc((oz+1)*sizeof(float));
+    float *coordx = (float *)malloc((oz+1)*sizeof(float));
+    float *coordy = (float *)malloc((ox+1)*sizeof(float));
+    float *ax = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *ay = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *bx = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *by = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *coorx = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *coory = (float *)malloc((ox+oz+2)*sizeof(float));
+    float *dist = (float *)malloc((ox+oz+1)*sizeof(float));
+    int *indi = (int *)malloc((ox+oz+1)*sizeof(int));
+
+    assert(coordx != NULL && coordy != NULL &&
+        ax != NULL && ay != NULL && by != NULL && bx != NULL &&
+        coorx != NULL && coory != NULL && dist != NULL && indi != NULL);
+
+    int s, p, d, b;
+    int quadrant;
+    float theta_p, sin_p, cos_p;
+    float mov, xi, yi;
+    int asize, bsize, csize;
+
+    preprocessing(ox, oz, dx, center[0],
+        &mov, gridx, gridy); // Outputs: mov, gridx, gridy
+
+    // For each slice
+    for (s=0; s<dy; s++)
+    {
+        // For each projection angle
+        for (p=0; p<dt; p++)
+        {
+            // For each pixel
+            for (d=0; d<dx; d++)
+            {
+                // For each bin
+                for (b=0; b<bin; b++)
+                {
+                    if (mask[b]==1) {
+                        // Calculate the sin and cos values
+                        // of the projection angle and find
+                        // at which quadrant on the cartesian grid.
+                        theta_p = fmod(theta[(p*bin)+b+s], 2*M_PI);
+                        quadrant = calc_quadrant(theta_p);
+                        sin_p = sinf(theta_p);
+                        cos_p = cosf(theta_p);
+
+                        // Calculate coordinates
+                        xi = -ox-oz;
+                        yi = (1-dx)/2.0+d+mov;
+
+                        calc_coords(
+                            ox, oz, xi, yi, sin_p, cos_p, gridx, gridy,
+                            coordx, coordy);
+
+                        // Merge the (coordx, gridy) and (gridx, coordy)
+                        trim_coords(
+                            ox, oz, coordx, coordy, gridx, gridy,
+                            &asize, ax, ay, &bsize, bx, by);
+
+                        // Sort the array of intersection points (ax, ay) and
+                        // (bx, by). The new sorted intersection points are
+                        // stored in (coorx, coory). Total number of points
+                        // are csize.
+                        sort_intersections(
+                            quadrant, asize, ax, ay, bsize, bx, by,
+                            &csize, coorx, coory);
+
+                        // Calculate the distances (dist) between the
+                        // intersection points (coorx, coory). Find the
+                        // indices of the pixels on the object grid.
+                        calc_dist(
+                            ox, oz, csize, coorx, coory,
+                            indi, dist);
+
+                        // Calculate simdata
+                        calc_simdata(s, p, d, ox, oz, dt, dx,
+                            csize, indi, dist, obj,
+                            data); // Output: simulated data
+                    }
+                }
+            }
+        }
+    }
+}

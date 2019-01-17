@@ -224,6 +224,10 @@ def recon(
 
     allowed_kwargs = {
         'art': ['num_gridx', 'num_gridy', 'num_iter'],
+        'art_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter',
+                             'bin', 'mask'],
+        'art_convolve': ['num_gridx', 'num_gridy', 'num_iter',
+                         'bin', 'mask'],
         'bart': ['num_gridx', 'num_gridy', 'num_iter',
                  'num_block', 'ind_block'],
         'fbp': ['num_gridx', 'num_gridy', 'filter_name', 'filter_par'],
@@ -238,6 +242,10 @@ def recon(
         'pml_hybrid': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
         'pml_quad': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
         'sirt': ['num_gridx', 'num_gridy', 'num_iter'],
+        'sirt_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter', 'bin',
+                              'mask'],
+        'sirt_convolve': ['num_gridx', 'num_gridy', 'num_iter', 'bin',
+                          'mask'],
         'tv': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
         'grad': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
     }
@@ -263,7 +271,8 @@ def recon(
                     (key, allowed_kwargs[algorithm]))
             else:
                 # Make sure they are numpy arrays.
-                if not isinstance(kwargs[key], (np.ndarray, np.generic)) and not isinstance(kwargs[key], six.string_types):
+                if not isinstance(kwargs[key], (np.ndarray, np.generic)) \
+                 and not isinstance(kwargs[key], six.string_types):
                     kwargs[key] = np.array(value)
 
                 # Make sure reg_par and filter_par is float32.
@@ -292,7 +301,8 @@ def recon(
     recon_shape = (tomo.shape[0], kwargs['num_gridx'], kwargs['num_gridy'])
     recon = _init_recon(recon_shape, init_recon, sharedmem=False)
     return _dist_recon(
-        tomo, center_arr, recon, _get_func(algorithm), args, kwargs, ncore, nchunk)
+        tomo, center_arr, recon, _get_func(algorithm), args, kwargs, ncore,
+        nchunk)
 
 
 # Convert data to sinogram order
@@ -328,6 +338,10 @@ def _init_recon(shape, init_recon, val=1e-6, sharedmem=True):
 def _get_func(algorithm):
     if algorithm == 'art':
         func = extern.c_art
+    elif algorithm == 'art_fly_rotation':
+        func = extern.c_art_fly_rotation
+    elif algorithm == 'art_convolve':
+        func = extern.c_art_convolve
     elif algorithm == 'bart':
         func = extern.c_bart
     elif algorithm == 'fbp':
@@ -348,11 +362,14 @@ def _get_func(algorithm):
         func = extern.c_pml_quad
     elif algorithm == 'sirt':
         func = extern.c_sirt
+    elif algorithm == 'sirt_fly_rotation':
+        func = extern.c_sirt_fly_rotation
+    elif algorithm == 'sirt_convolve':
+        func = extern.c_sirt_convolve
     elif algorithm == 'tv':
         func = extern.c_tv
     elif algorithm == 'grad':
         func = extern.c_grad
-
     else:
         func = algorithm
     return func
@@ -361,7 +378,6 @@ def _get_func(algorithm):
 def _dist_recon(tomo, center, recon, algorithm, args, kwargs, ncore, nchunk):
     axis_size = recon.shape[0]
     ncore, slcs = mproc.get_ncore_slices(axis_size, ncore, nchunk)
-
     if ncore == 1:
         for slc in slcs:
             # run in this thread (useful for debugging)
@@ -370,7 +386,8 @@ def _dist_recon(tomo, center, recon, algorithm, args, kwargs, ncore, nchunk):
         # execute recon on ncore threads
         with cf.ThreadPoolExecutor(ncore) as e:
             for slc in slcs:
-                e.submit(algorithm, tomo[slc], center[slc], recon[slc], *args, **kwargs)
+                e.submit(algorithm, tomo[slc], center[slc], recon[slc], *args,
+                         **kwargs)
     return recon
 
 
@@ -391,4 +408,6 @@ def _get_algorithm_kwargs(shape):
         'num_block': dtype.as_int32(1),
         'ind_block': np.arange(0, dt, dtype=np.float32),  # TODO: I think this should be int
         'options': {},
+        'bin': 1,
+        'mask': np.ones(1, dtype='bool'),
     }

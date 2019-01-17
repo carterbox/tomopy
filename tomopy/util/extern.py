@@ -70,10 +70,15 @@ __all__ = ['c_shared_lib',
            'c_project',
            'c_project2',
            'c_project3',
+           'c_project_fly_rotation',
+           'c_project_fly_rotation_interlaced',
+           'c_project_fly_rotation_interlaced_reg',
            'c_normalize_bg',
            'c_remove_stripe_sf',
            'c_sample',
            'c_art',
+           'c_art_convolve',
+           'c_art_fly_rotation',
            'c_bart',
            'c_fbp',
            'c_gridrec',
@@ -84,6 +89,8 @@ __all__ = ['c_shared_lib',
            'c_pml_hybrid',
            'c_pml_quad',
            'c_sirt',
+           'c_sirt_convolve',
+           'c_sirt_fly_rotation',
            'c_tv',
            'c_grad',
            'c_vector',
@@ -252,6 +259,80 @@ def c_project3(objx, objy, objz, center, tomo, theta, axis):
     tomo[:] = contiguous_tomo[:]
 
 
+def c_project_fly_rotation(obj, center, tomo, theta, bin, mask):
+    # TODO: we should fix this elsewhere...
+    # TOMO object must be contiguous for c function to work
+
+    contiguous_tomo = np.require(tomo, requirements="AC")
+    if len(obj.shape) == 2:
+        # no y-axis (only one slice)
+        oy = 1
+        ox, oz = obj.shape
+    else:
+        oy, ox, oz = obj.shape
+
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+
+    theta = np.tile(theta, 2)
+    LIB_TOMOPY.project_fly_rotation.restype = dtype.as_c_void_p()
+    LIB_TOMOPY.project_fly_rotation(
+        dtype.as_c_float_p(obj),
+        dtype.as_c_int(oy),
+        dtype.as_c_int(ox),
+        dtype.as_c_int(oz),
+        dtype.as_c_float_p(contiguous_tomo),
+        dtype.as_c_int(dy),
+        dtype.as_c_int(dt),
+        dtype.as_c_int(dx),
+        dtype.as_c_float_p(center),
+        dtype.as_c_float_p(theta),
+        dtype.as_c_int(bin),
+        dtype.as_c_int_p(mask))
+    tomo[:] = contiguous_tomo[:]
+
+
+def c_project_fly_rotation_interlaced(obj, center, tomo, theta, bin, mask):
+    # TODO: we should fix this elsewhere...
+    # TOMO object must be contiguous for c function to work
+
+    contiguous_tomo = np.require(tomo, requirements="AC")
+    if len(obj.shape) == 2:
+        # no y-axis (only one slice)
+        oy = 1
+        ox, oz = obj.shape
+    else:
+        oy, ox, oz = obj.shape
+
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+
+    theta = np.tile(theta, 2)
+    LIB_TOMOPY.project_fly_rotation_interlaced.restype = dtype.as_c_void_p()
+    LIB_TOMOPY.project_fly_rotation_interlaced(
+        dtype.as_c_float_p(obj),
+        dtype.as_c_int(oy),
+        dtype.as_c_int(ox),
+        dtype.as_c_int(oz),
+        dtype.as_c_float_p(contiguous_tomo),
+        dtype.as_c_int(dy),
+        dtype.as_c_int(dt),
+        dtype.as_c_int(dx),
+        dtype.as_c_float_p(center),
+        dtype.as_c_float_p(theta),
+        dtype.as_c_int(bin),
+        dtype.as_c_int_p(mask))
+    tomo[:] = contiguous_tomo[:]
+
+
 def c_sample(mode, arr, dx, dy, dz, level, axis, out):
     LIB_TOMOPY.sample.restype = dtype.as_c_void_p()
     LIB_TOMOPY.sample(
@@ -286,6 +367,94 @@ def c_art(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['num_gridx']),
             dtype.as_c_int(kwargs['num_gridy']),
             dtype.as_c_int(kwargs['num_iter']))
+
+
+def c_art_fly_rotation(tomo, center, recon, theta, **kwargs):
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+
+    theta = np.tile(theta, 2)
+    LIB_TOMOPY.art_fly_rotation.restype = dtype.as_c_void_p()
+    return LIB_TOMOPY.art_fly_rotation(
+            dtype.as_c_float_p(tomo),
+            dtype.as_c_int(dy),
+            dtype.as_c_int(dt),
+            dtype.as_c_int(dx),
+            dtype.as_c_float_p(center),
+            dtype.as_c_float_p(theta),
+            dtype.as_c_float_p(recon),
+            dtype.as_c_int(kwargs['num_gridx']),
+            dtype.as_c_int(kwargs['num_gridy']),
+            dtype.as_c_int(kwargs['num_iter']),
+            dtype.as_c_int(kwargs['bin']),
+            dtype.as_c_int_p(kwargs['mask']))
+
+
+def FFT_order(x):
+    """Reorders x according to the 1D Cooley-Tukey FFT access pattern"""
+    x = np.asarray(x, dtype=float)
+    N = x.shape[0]
+    if N % 2 > 0:
+        raise ValueError("size of x must be a power of 2")
+    elif N <= 2:  # this cutoff should be optimized
+        return x
+    else:
+        X_even = FFT_order(x[::2])
+        X_odd = FFT_order(x[1::2])
+        return np.concatenate([X_even, X_odd])
+
+
+def multilevel_order(L):
+    """Returns an order of length L according to the multilevel scheme by
+    Guan and Gordon (1994)
+    """
+    if L % 2 > 0:
+        raise ValueError("L must be a power of 2")
+    N = 2
+    order = list()
+    order.append(np.array([0, 1]) / 2)
+    level = 4
+    while N < L:
+        order.append(FFT_order(np.arange(1, level, 2)) / level)
+        N += level / 2
+        level *= 2
+    return (np.concatenate(order) * L).astype('int32')
+
+
+def c_art_convolve(tomo, center, recon, theta, **kwargs):
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+
+    p = multilevel_order(dt)
+    # porder = np.concatenate([p, p + dt // 2])
+    porder = p.astype(np.int32)
+    # print(porder)
+
+    theta = np.tile(theta, 2)
+    LIB_TOMOPY.art_convolve.restype = dtype.as_c_void_p()
+    return LIB_TOMOPY.art_convolve(
+            dtype.as_c_float_p(tomo),
+            dtype.as_c_int(dy),
+            dtype.as_c_int(dt),
+            dtype.as_c_int(dx),
+            dtype.as_c_float_p(center),
+            dtype.as_c_float_p(theta),
+            dtype.as_c_float_p(recon),
+            dtype.as_c_int(kwargs['num_gridx']),
+            dtype.as_c_int(kwargs['num_gridy']),
+            dtype.as_c_int(kwargs['num_iter']),
+            dtype.as_c_int(kwargs['bin']),
+            dtype.as_c_bool_p(kwargs['mask']),
+            dtype.as_c_int_p(porder),
+            )
 
 
 def c_bart(tomo, center, recon, theta, **kwargs):
@@ -521,6 +690,53 @@ def c_sirt(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['num_gridy']),
             dtype.as_c_int(kwargs['num_iter']))
 
+
+def c_sirt_fly_rotation(tomo, center, recon, theta, **kwargs):
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+    LIB_TOMOPY.sirt_fly_rotation.restype = dtype.as_c_void_p()
+    return LIB_TOMOPY.sirt_fly_rotation(
+            dtype.as_c_float_p(tomo),
+            dtype.as_c_int(dy),
+            dtype.as_c_int(dt),
+            dtype.as_c_int(dx),
+            dtype.as_c_float_p(center),
+            dtype.as_c_float_p(theta),
+            dtype.as_c_float_p(recon),
+            dtype.as_c_int(kwargs['num_gridx']),
+            dtype.as_c_int(kwargs['num_gridy']),
+            dtype.as_c_int(kwargs['num_iter']),
+            dtype.as_c_int(kwargs['bin']),
+            dtype.as_c_int_p(kwargs['mask']))
+
+
+def c_sirt_convolve(tomo, center, recon, theta, **kwargs):
+    if len(tomo.shape) == 2:
+        # no y-axis (only one slice)
+        dy = 1
+        dt, dx = tomo.shape
+    else:
+        dy, dt, dx = tomo.shape
+    LIB_TOMOPY.sirt_convolve.restype = dtype.as_c_void_p()
+    return LIB_TOMOPY.sirt_convolve(
+            dtype.as_c_float_p(tomo),
+            dtype.as_c_int(dy),
+            dtype.as_c_int(dt),
+            dtype.as_c_int(dx),
+            dtype.as_c_float_p(center),
+            dtype.as_c_float_p(theta),
+            dtype.as_c_float_p(recon),
+            dtype.as_c_int(kwargs['num_gridx']),
+            dtype.as_c_int(kwargs['num_gridy']),
+            dtype.as_c_int(kwargs['num_iter']),
+            dtype.as_c_int(kwargs['bin']),
+            dtype.as_c_bool_p(kwargs['mask']))
+
+
 def c_tv(tomo, center, recon, theta, **kwargs):
     if len(tomo.shape) == 2:
         # no y-axis (only one slice)
@@ -528,7 +744,6 @@ def c_tv(tomo, center, recon, theta, **kwargs):
         dt, dx = tomo.shape
     else:
         dy, dt, dx = tomo.shape
-
     LIB_TOMOPY.tv.restype = dtype.as_c_void_p()
     return LIB_TOMOPY.tv(
             dtype.as_c_float_p(tomo),
@@ -543,6 +758,7 @@ def c_tv(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['num_iter']),
             dtype.as_c_float_p(kwargs['reg_par']))
 
+
 def c_grad(tomo, center, recon, theta, **kwargs):
     if len(tomo.shape) == 2:
         # no y-axis (only one slice)
@@ -550,7 +766,6 @@ def c_grad(tomo, center, recon, theta, **kwargs):
         dt, dx = tomo.shape
     else:
         dy, dt, dx = tomo.shape
-
     LIB_TOMOPY.grad.restype = dtype.as_c_void_p()
     return LIB_TOMOPY.grad(
             dtype.as_c_float_p(tomo),
@@ -648,7 +863,6 @@ def c_vector3(tomo1, tomo2, tomo3, center1, center2, center3, recon1, recon2, re
             dtype.as_c_int(axis1),
             dtype.as_c_int(axis2),
             dtype.as_c_int(axis3))
-
 
 
 def c_remove_ring(rec, *args):

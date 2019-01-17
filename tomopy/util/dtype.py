@@ -76,7 +76,8 @@ __all__ = ['as_ndarray',
            'as_c_int_p',
            'as_c_float',
            'as_c_char_p',
-           'as_c_void_p']
+           'as_c_void_p',
+           'as_c_bool_p']
 
 
 def as_ndarray(arr, dtype=None, copy=False):
@@ -114,6 +115,11 @@ def as_uint8(arr):
 def as_c_float_p(arr):
     c_float_p = ctypes.POINTER(ctypes.c_float)
     return arr.ctypes.data_as(c_float_p)
+
+
+def as_c_bool_p(arr):
+    c_bool_p = ctypes.POINTER(ctypes.c_bool)
+    return arr.ctypes.data_as(c_bool_p)
 
 
 def as_c_int(arr):

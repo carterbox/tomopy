@@ -69,6 +69,8 @@ __all__ = ['angles',
            'project',
            'project2',
            'project3',
+           'project_fly_rotation',
+           'project_fly_rotation_interlaced',
            'fan_to_para',
            'para_to_fan',
            'add_gaussian',
@@ -295,7 +297,7 @@ def project2(
     center = get_center(shape, center)
 
     extern.c_project2(objx, objy, center, tomo, theta)
-    
+
     # NOTE: returns sinogram order with emmission=True
     if not emission:
         # convert data to be transmission type
@@ -310,7 +312,7 @@ def project2(
 
 
 def project3(
-        objx, objy, objz, theta, center=None, 
+        objx, objy, objz, theta, center=None,
         emission=True, pad=True,
         sinogram_order=False, axis=0, ncore=None, nchunk=None):
     """
@@ -363,7 +365,7 @@ def project3(
     center = get_center(shape, center)
 
     extern.c_project3(objx, objy, objz, center, tomo, theta, axis)
-    
+
     # NOTE: returns sinogram order with emmission=True
     if not emission:
         # convert data to be transmission type
@@ -373,7 +375,156 @@ def project3(
         tomo = np.swapaxes(tomo, 0, 1)  # doesn't copy data
         # copy data to sharedmem
         tomo = dtype.as_sharedmem(tomo, copy=True)
-        
+
+    return tomo
+
+
+def project_fly_rotation(
+        obj, theta, center=None, emission=True, pad=True, bin=1, mask=None,
+        sinogram_order=False, ncore=None, nchunk=None):
+    """
+    Project x-rays through a given 3D object.
+
+    Parameters
+    ----------
+    obj : ndarray
+        Voxelized 3D object.
+    theta : array
+        Projection angles in radian.
+    center: array, optional
+        Location of rotation axis.
+    emission : bool, optional
+        Determines whether output data is emission or transmission type.
+    pad : bool, optional
+        Determines if the projection image width will be padded or not. If True,
+        then the diagonal length of the object cross-section will be used for the
+        output size of the projection image width.
+    sinogram_order: bool, optional
+        Determines whether output data is a stack of sinograms (True, y-axis first axis)
+        or a stack of radiographs (False, theta first axis).
+    ncore : int, optional
+        Number of cores that will be assigned to jobs.
+    nchunk : int, optional
+        Chunk size for each core.
+
+    Returns
+    -------
+    ndarray
+        3D tomographic data.
+    """
+    if mask is None:
+        mask = np.ones(bin, dtype='int32')
+
+    obj = dtype.as_float32(obj)
+    theta = dtype.as_float32(theta)
+    bin = dtype.as_int32(bin)
+    mask = dtype.as_int32(mask)
+
+    # Estimate data dimensions.
+    oy, ox, oz = obj.shape
+    dt = theta.size
+    dy = oy
+    if pad is True:
+        dx = _round_to_even(np.sqrt(ox * ox + oz * oz) + 2)
+    elif pad is False:
+        dx = ox
+    shape = dy, dt, dx
+    tomo = dtype.empty_shared_array(shape)
+    tomo[:] = 0.0
+    center = get_center(shape, center)
+
+    tomo = mproc.distribute_jobs(
+        (obj, center, tomo),
+        func=extern.c_project_fly_rotation,
+        args=(theta, bin, mask),
+        axis=0,
+        ncore=ncore,
+        nchunk=nchunk)
+    # NOTE: returns sinogram order with emmission=True
+    if not emission:
+        # convert data to be transmission type
+        np.exp(-tomo, tomo)
+    if not sinogram_order:
+        # rotate to radiograph order
+        tomo = np.swapaxes(tomo, 0, 1)  # doesn't copy data
+        # copy data to sharedmem
+        tomo = dtype.as_sharedmem(tomo, copy=True)
+
+    return tomo
+
+
+def project_fly_rotation_interlaced(
+        obj, theta, center=None, emission=True, pad=True, bin=1, mask=None,
+        sinogram_order=False, ncore=None, nchunk=None):
+    """
+    Project x-rays through a given 3D object.
+
+    Parameters
+    ----------
+    obj : ndarray
+        Voxelized 3D object.
+    theta : array
+        Projection angles in radian.
+    center: array, optional
+        Location of rotation axis.
+    emission : bool, optional
+        Determines whether output data is emission or transmission type.
+    pad : bool, optional
+        Determines if the projection image width will be padded or not. If True,
+        then the diagonal length of the object cross-section will be used for the
+        output size of the projection image width.
+    sinogram_order: bool, optional
+        Determines whether output data is a stack of sinograms (True, y-axis first axis)
+        or a stack of radiographs (False, theta first axis).
+    ncore : int, optional
+        Number of cores that will be assigned to jobs.
+    nchunk : int, optional
+        Chunk size for each core.
+
+    Returns
+    -------
+    ndarray
+        3D tomographic data.
+    """
+
+    if mask is None:
+        mask = np.ones(bin, dtype='int32')
+
+    obj = dtype.as_float32(obj)
+    theta = dtype.as_float32(theta)
+    bin = dtype.as_int32(bin)
+    mask = dtype.as_int32(mask)
+
+    # Estimate data dimensions.
+    oy, ox, oz = obj.shape
+    dt = theta.size
+    dy = oy
+    if pad is True:
+        dx = _round_to_even(np.sqrt(ox * ox + oz * oz) + 2)
+    elif pad is False:
+        dx = ox
+    shape = dy, int(dt/bin), dx
+    tomo = dtype.empty_shared_array(shape)
+    tomo[:] = 0.0
+    center = get_center(shape, center)
+
+    tomo = mproc.distribute_jobs(
+        (obj, center, tomo),
+        func=extern.c_project_fly_rotation_interlaced,
+        args=(theta, bin, mask),
+        axis=0,
+        ncore=ncore,
+        nchunk=nchunk)
+    # NOTE: returns sinogram order with emmission=True
+    if not emission:
+        # convert data to be transmission type
+        np.exp(-tomo, tomo)
+    if not sinogram_order:
+        # rotate to radiograph order
+        tomo = np.swapaxes(tomo, 0, 1)  # doesn't copy data
+        # copy data to sharedmem
+        tomo = dtype.as_sharedmem(tomo, copy=True)
+
     return tomo
 
 
