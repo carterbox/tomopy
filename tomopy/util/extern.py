@@ -454,6 +454,7 @@ def c_art_convolve(tomo, center, recon, theta, **kwargs):
             dtype.as_c_int(kwargs['bin']),
             dtype.as_c_bool_p(kwargs['mask']),
             dtype.as_c_int_p(porder),
+            dtype.as_c_bool(kwargs['emission_mode']),
             )
 
 

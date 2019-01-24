@@ -227,7 +227,7 @@ def recon(
         'art_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter',
                              'bin', 'mask'],
         'art_convolve': ['num_gridx', 'num_gridy', 'num_iter',
-                         'bin', 'mask'],
+                         'bin', 'mask', 'emission_mode'],
         'bart': ['num_gridx', 'num_gridy', 'num_iter',
                  'num_block', 'ind_block'],
         'fbp': ['num_gridx', 'num_gridy', 'filter_name', 'filter_par'],
@@ -410,4 +410,5 @@ def _get_algorithm_kwargs(shape):
         'options': {},
         'bin': 1,
         'mask': np.ones(1, dtype='bool'),
+        'emission_mode': True,
     }

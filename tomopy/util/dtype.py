@@ -117,6 +117,10 @@ def as_c_float_p(arr):
     return arr.ctypes.data_as(c_float_p)
 
 
+def as_c_bool(arr):
+    return ctypes.c_bool(arr)
+
+
 def as_c_bool_p(arr):
     c_bool_p = ctypes.POINTER(ctypes.c_bool)
     return arr.ctypes.data_as(c_bool_p)
