@@ -162,6 +162,14 @@ art_convolve(
     float *recon, int ngridx, int ngridy, int num_iter,
     int nmask, bool *mask, int *ind_block, bool emission_mode)
 {
+    float sum_mask = 0;
+    for (int n=0; n<nmask; n++)
+    {
+        if (mask[n])
+        {
+            sum_mask += 1.0;
+        }
+    }
     // int s, i, p, b, d, n; // preferred loop order
     // For each slice
     for (int s=0; s<dy; s++)
@@ -239,7 +247,7 @@ art_convolve(
                             pool_upd = (data[ind_data] - pool_sim[d])
                                 / pool_sum_dist2[d];
                         } else {
-                            pool_upd = (data[ind_data] + logf(pool_sim[d]))
+                            pool_upd = (data[ind_data] + logf(pool_sim[d] / sum_mask))
                                 / pool_sum_dist2[d];
                         }
 
