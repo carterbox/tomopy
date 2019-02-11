@@ -174,7 +174,7 @@ art_convolve(
     const float *data, int dy, int dt, int dx,
     const float *center, const float *theta,
     float *recon, int ngridx, int ngridy, int num_iter,
-    int nmask, bool *mask, int *ind_block, bool emission_mode);
+    int nmask, bool *mask, int *ind_block);
 
 void DLL
 bart(

@@ -152,15 +152,13 @@ Then to reconstruct, we compare [data] with mask * simdata([theta]).
 @param nmask The number of angles to be grouped together.
 @param mask A boolean mask for the angles, i.e. the convolution kernel.
 @param theta The angles at which measurements were collected the size is dt
-@param emission_mode Whether the measurements from each bit in the code add
-  directly (emission mode) or add as exponentials (transmission mode)
  */
 void
 art_convolve(
     const float *data, int dy, int dt, int dx,
     const float *center, const float *theta,
     float *recon, int ngridx, int ngridy, int num_iter,
-    int nmask, bool *mask, int *ind_block, bool emission_mode)
+    int nmask, bool *mask, int *ind_block)
 {
     float sum_mask = 0;
     for (int n=0; n<nmask; n++)
@@ -227,11 +225,7 @@ art_convolve(
                                 // Calculate pool data
                                 pool_sum_dist2[d] += all_sum_dist2[ray];
                                 int ind_sim = d + dx*p1;
-                                if (emission_mode) {
-                                  pool_sim[d] += simdata[ind_sim];
-                                } else {
-                                  pool_sim[d] += expf(-simdata[ind_sim]);
-                                }
+                                pool_sim[d] += simdata[ind_sim];
                             }
                         }
                     }
@@ -242,14 +236,8 @@ art_convolve(
                     if (pool_sum_dist2[d] > 0)
                     {
                         int ind_data = d + dx*(p + dt*s);
-                        float pool_upd;
-                        if (emission_mode) {
-                            pool_upd = (data[ind_data] - pool_sim[d])
-                                / pool_sum_dist2[d];
-                        } else {
-                            pool_upd = (data[ind_data] + logf(pool_sim[d] / sum_mask))
-                                / pool_sum_dist2[d];
-                        }
+                        float pool_upd = (data[ind_data] - pool_sim[d])
+                            / pool_sum_dist2[d];
 
                         // For each code element
                         for (int b=0; b<nmask; b++)
