@@ -134,6 +134,7 @@ def run(phantom,
         algorithm,
         ncores,
         num_iter,
+        iter_step=1,
         output_dir="",
         filter_name="",
         format="png",
@@ -156,11 +157,12 @@ def run(phantom,
         "ncore": ncores,
     }
     # don't assign "num_iter" if gridrec or fbp
-    step = 1
     if algorithm not in ["fbp", "gridrec"]:
+        step = iter_step
         _kwargs["num_iter"] = step
     else:
         num_iter = 1
+        step = 1
 
     print("Reconstructing {} with {}...".format(phantom, _kwargs))
 
@@ -170,7 +172,7 @@ def run(phantom,
     recon = None
     basepath = get_basepath(output_dir, phantom, algorithm, filter_name)
     os.makedirs(basepath, exist_ok=True)
-    for i in range(1, num_iter + 1, step):
+    for i in range(step, num_iter + 1, step):
         filename = os.path.join(basepath, "{:03d}".format(i))
         # look for the ouput; only reconstruct if it doesn't exist
         if False:  # os.path.isfile(filename + '.npz'):
@@ -414,6 +416,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--trials",
         help="run this many trials of the same phantom simultaneously",
+        default=1,
+        type=int)
+    parser.add_argument(
+        "--iter-step",
+        help="compute reconstruction quality after this number of iterations",
         default=1,
         type=int)
 
