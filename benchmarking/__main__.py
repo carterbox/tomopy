@@ -45,7 +45,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # #########################################################################
-
 """
 PyCTest driver for TomoPy
 """
@@ -53,14 +52,14 @@ PyCTest driver for TomoPy
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import os
-import sys
-import glob
-import shutil
-import platform
 import argparse
-import traceback
+import glob
+import os
+import platform
+import shutil
 import subprocess as sp
+import sys
+import traceback
 
 import pyctest.pyctest as pyctest
 import pyctest.pycmake as pycmake
@@ -88,58 +87,73 @@ def cleanup(path=None, exclude=[]):
 
 def configure():
     # Get pyctest argument parser that include PyCTest arguments
-    parser = helpers.ArgumentParser(project_name="TomoPy",
-                                    source_dir=os.getcwd(),
-                                    binary_dir=os.getcwd(),
-                                    python_exe=sys.executable,
-                                    submit=False,
-                                    ctest_args=["-V"])
+    parser = helpers.ArgumentParser(
+        project_name="TomoPy",
+        source_dir=os.getcwd(),
+        binary_dir=os.getcwd(),
+        python_exe=sys.executable,
+        submit=False,
+        ctest_args=["-V"])
     # TODO: Remove duplicate argument definitions in __main__ and phantom by
     # enumerating arguments as dictionaries which can be imported.
-    parser.add_argument("-n", "--ncores",
-                        help="number of cores",
-                        type=int,
-                        default=default_ncores)
-    parser.add_argument("-i", "--num-iter",
-                        help="number of iterations",
-                        type=int,
-                        default=default_nitr)
-    parser.add_argument("-p", "--phantoms",
-                        help="Phantoms to simulate",
-                        type=str,
-                        nargs='*',
-                        choices=phantom_choices,
-                        default=phantom_choices)
-    parser.add_argument("--phantom-size",
-                        type=int,
-                        help="Size parameter for the phantom reconstructions",
-                        default=default_phantom_size)
-    parser.add_argument("-a", "--algorithms",
-                        help="Algorithms to use",
-                        type=str,
-                        nargs='*',
-                        choices=algorithm_choices,
-                        default=algorithm_choices)
-    parser.add_argument("--globus-path",
-                        help="Path to tomobank datasets",
-                        type=str,
-                        default=None)
-    parser.add_argument("--skip-cleanup",
-                        help="Skip cleanup of any old pyctest files",
-                        action='store_true',
-                        default=False)
-    parser.add_argument("--cleanup",
-                        help="Cleanup of any old pyctest files and exit",
-                        action='store_true',
-                        default=False)
-    parser.add_argument("--coverage",
-                        help="Enable coverage for compiled code",
-                        action='store_true',
-                        default=False)
-    parser.add_argument("--disable-phantom-tests",
-                        help="Disable running phantom tests",
-                        action='store_true',
-                        default=False)
+    parser.add_argument(
+        "-n",
+        "--ncores",
+        help="number of cores",
+        type=int,
+        default=default_ncores)
+    parser.add_argument(
+        "-i",
+        "--num-iter",
+        help="number of iterations",
+        type=int,
+        default=default_nitr)
+    parser.add_argument(
+        "-p",
+        "--phantoms",
+        help="Phantoms to simulate",
+        type=str,
+        nargs='*',
+        choices=phantom_choices,
+        default=phantom_choices)
+    parser.add_argument(
+        "--phantom-size",
+        type=int,
+        help="Size parameter for the phantom reconstructions",
+        default=default_phantom_size)
+    parser.add_argument(
+        "-a",
+        "--algorithms",
+        help="Algorithms to use",
+        type=str,
+        nargs='*',
+        choices=algorithm_choices,
+        default=algorithm_choices)
+    parser.add_argument(
+        "--globus-path",
+        help="Path to tomobank datasets",
+        type=str,
+        default=None)
+    parser.add_argument(
+        "--skip-cleanup",
+        help="Skip cleanup of any old pyctest files",
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--cleanup",
+        help="Cleanup of any old pyctest files and exit",
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--coverage",
+        help="Enable coverage for compiled code",
+        action='store_true',
+        default=False)
+    parser.add_argument(
+        "--disable-phantom-tests",
+        help="Disable running phantom tests",
+        action='store_true',
+        default=False)
     # calls PyCTest.helpers.ArgumentParser.parse_args()
     args = parser.parse_args()
 
@@ -158,8 +172,7 @@ def configure():
     if args.coverage:
         # FIXME: Are these still necessary with cmake buildsystem?
         # read by Makefile.linux and Makefile.darwin
-        pyctest.set(
-            "ENV{CFLAGS}", "-g -O0 -fprofile-arcs -ftest-coverage")
+        pyctest.set("ENV{CFLAGS}", "-g -O0 -fprofile-arcs -ftest-coverage")
         pyctest.set("ENV{LDFLAGS}", "-fprofile-arcs -lgcov")
 
     git_exe = helpers.FindExePath("git")
@@ -176,10 +189,8 @@ def run_pyctest():
     # Change the build name to something other than default
     pyctest.BUILD_NAME = "[{}] [{} {} {}] [Python ({}) {}]".format(
         pyctest.GetGitBranch(pyctest.SOURCE_DIRECTORY),
-        platform.uname()[0],
-        helpers.GetSystemVersionInfo(),
-        platform.uname()[4],
-        platform.python_implementation(),
+        platform.uname()[0], helpers.GetSystemVersionInfo(),
+        platform.uname()[4], platform.python_implementation(),
         platform.python_version())
     # when coverage is enabled, we compile in debug so modify the build name
     # so that the history of test timing is not affected
@@ -189,8 +200,12 @@ def run_pyctest():
     pyctest.BUILD_NAME = " ".join(pyctest.BUILD_NAME.split())
     # how to build the code
     pyctest.BUILD_COMMAND = " ".join([
-        pyctest.PYTHON_EXECUTABLE, "-m",
-        "pip", "install", pyctest.SOURCE_DIRECTORY, "-vvv",
+        pyctest.PYTHON_EXECUTABLE,
+        "-m",
+        "pip",
+        "install",
+        pyctest.SOURCE_DIRECTORY,
+        "-vvv",
         # "--target", pyctest.BINARY_DIRECTORY,
     ])
     # find the python path
@@ -202,8 +217,8 @@ def run_pyctest():
         if gcov_cmd is not None:
             pyctest.COVERAGE_COMMAND = "{}".format(gcov_cmd)
             pyctest.set("CTEST_COVERAGE_EXTRA_FLAGS", "-m")
-            pyctest.set("CTEST_EXTRA_COVERAGE_GLOB", "{}/*.gcno".format(
-                pyctest.SOURCE_DIRECTORY))
+            pyctest.set("CTEST_EXTRA_COVERAGE_GLOB",
+                        "{}/*.gcno".format(pyctest.SOURCE_DIRECTORY))
     else:
         # assign to just generate python coverage
         pyctest.COVERAGE_COMMAND = "{};xml".format(cover_exe)
@@ -214,8 +229,7 @@ def run_pyctest():
         shutil.copytree(
             os.path.join(pyctest.SOURCE_DIRECTORY, "benchmarking"),
             os.path.join(pyctest.BINARY_DIRECTORY, "benchmarking"),
-            symlinks=False
-        )
+            symlinks=False)
     except FileExistsError:
         pass
 
@@ -243,11 +257,11 @@ def generate_ctest_correct_module(args):
     """Create a CTest that checks we imported the correct module."""
     test = pyctest.test()
     test.SetName("correct_module")
-    test.SetCommand([pyctest.PYTHON_EXECUTABLE, "-c",
-                     "\"import os, sys, tomopy; " +
-                     "print('using tomopy module: {}'.format(tomopy.__file__)); " +
-                     "ret=0 if os.getcwd() in tomopy.__file__ else 1; " +
-                     "sys.exit(ret)\""])
+    test.SetCommand([
+        pyctest.PYTHON_EXECUTABLE, "-c", "\"import os, sys, tomopy; " +
+        "print('using tomopy module: {}'.format(tomopy.__file__)); " +
+        "ret=0 if os.getcwd() in tomopy.__file__ else 1; " + "sys.exit(ret)\""
+    ])
     # set directory to run test
     test.SetProperty("WORKING_DIRECTORY", pyctest.BINARY_DIRECTORY)
     test.SetProperty("ENVIRONMENT", "OMP_NUM_THREADS=1")
@@ -270,8 +284,8 @@ def generate_ctest_nosetests(args, python_path):
     if coverage_exe is None:
         coverage_exe = helpers.FindExePath("coverage")
     # python $(which coverage) run $(which nosetests)
-    test.SetCommand([pyctest.PYTHON_EXECUTABLE, coverage_exe, "run",
-                    nosetest_exe])
+    test.SetCommand(
+        [pyctest.PYTHON_EXECUTABLE, coverage_exe, "run", nosetest_exe])
     test.SetProperty("WORKING_DIRECTORY", pyctest.BINARY_DIRECTORY)
     test.SetProperty("ENVIRONMENT", "OMP_NUM_THREADS=1")
     # Generating C code coverage is enabled
@@ -281,8 +295,8 @@ def generate_ctest_nosetests(args, python_path):
         # because pyctest.COVERAGE_COMMAND is used to generate GCov files
         coverage_cmd = ""
         if platform.system() != "Windows":
-            cover_cmd = os.path.join(pyctest.SOURCE_DIRECTORY,
-                                     "benchmarking", "generate_coverage.sh")
+            cover_cmd = os.path.join(pyctest.SOURCE_DIRECTORY, "benchmarking",
+                                     "generate_coverage.sh")
             coverage_cmd = [cover_cmd, pyctest.SOURCE_DIRECTORY]
         else:
             # don't attempt GCov on Windows
@@ -318,23 +332,20 @@ def generate_ctest_tomobank(args):
             test.SetProperty("ENVIRONMENT", "OMP_NUM_THREADS=1")
             test.SetProperty("DEPENDS", "nosetests")
             if h5file is None:
-                test.SetCommand([pyctest.PYTHON_EXECUTABLE,
-                                "-c",
-                                "print(\"Path to Globus file '{}/{}.h5' not specified\")".format(
-                                    phantom, phantom)])
+                test.SetCommand([
+                    pyctest.PYTHON_EXECUTABLE, "-c",
+                    "print(\"Path to Globus file '{}/{}.h5' not specified\")".
+                    format(phantom, phantom)
+                ])
 
             else:
-                test.SetCommand([pyctest.PYTHON_EXECUTABLE,
-                                "-m", "benchmarking.tomobank",
-                                h5file,
-                                "-a", algorithm,
-                                "--type", "slice",
-                                "-f", "jpeg",
-                                "-S", "1",
-                                "-c", "4",
-                                "-o", "Testing/{}".format(name),
-                                "-n", "{}".format(args.ncores),
-                                "-i", "{}".format(args.num_iter)])
+                test.SetCommand([
+                    pyctest.PYTHON_EXECUTABLE, "-m", "benchmarking.tomobank",
+                    h5file, "-a", algorithm, "--type", "slice", "-f", "jpeg",
+                    "-S", "1", "-c", "4", "-o", "Testing/{}".format(name),
+                    "-n", "{}".format(args.ncores), "-i", "{}".format(
+                        args.num_iter)
+                ])
 
 
 def generate_ctest_phantom(args):
@@ -342,14 +353,14 @@ def generate_ctest_phantom(args):
     # loop over args.phantoms, skip when generating C coverage (too long)
     if not args.coverage and not args.disable_phantom_tests:
 
-        name_algo = (args.algorithms[0] if len(args.algorithms) == 1
-                     else "comparison")
+        name_algo = (args.algorithms[0]
+                     if len(args.algorithms) == 1 else "comparison")
 
         for phantom in args.phantoms:
             name_test = "{}_{}".format(phantom, name_algo)
             # shepp3d gets special size treatment because it's 3D
-            nsize = (args.phantom_size if phantom != "shepp3d"
-                     else args.phantom_size // 4)
+            nsize = (args.phantom_size
+                     if phantom != "shepp3d" else args.phantom_size // 4)
             # if size customized, create unique test-name
             if args.phantom_size != default_phantom_size:
                 name_test = "{}_pix{}".format(name_test, nsize)
@@ -365,19 +376,14 @@ def generate_ctest_phantom(args):
             test.SetProperty("DEPENDS", "nosetests")
             if phantom == "shepp3d":
                 test.SetProperty("RUN_SERIAL", "ON")
-            test.SetCommand([
-                    pyctest.PYTHON_EXECUTABLE,
-                    "-m", "benchmarking.phantom",
-                    "-p", phantom,
-                    "-s", "{}".format(nsize),
-                    "-A", "360",
-                    "-f", "jpeg",
-                    "-S", "1",
-                    "-n", "{}".format(args.ncores),
-                    "-i", "{}".format(args.num_iter),
-                    "--output-dir", "Testing",
-                    "-a"] + args.algorithms,  # py27 has no list unpacking
-                )
+            test.SetCommand(
+                [
+                    pyctest.PYTHON_EXECUTABLE, "-m", "benchmarking.phantom",
+                    "-p", phantom, "-s", "{}".format(nsize), "-A", "360", "-f",
+                    "jpeg", "-S", "1", "-n", "{}".format(args.ncores), "-i",
+                    "{}".format(args.num_iter), "--output-dir", "Testing", "-a"
+                ] + args.algorithms,  # py27 has no list unpacking
+            )
 
 
 if __name__ == "__main__":

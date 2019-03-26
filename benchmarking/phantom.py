@@ -45,42 +45,51 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # #########################################################################
-
 """TomoPy script to reconstruct a built-in phantom."""
 
 from __future__ import absolute_import
 
-import sys
-import shutil
-import os
 import argparse
-import traceback
-import multiprocessing as mp
-import xdesign as xd
+import os
 import pprint
+import shutil
+import sys
+import traceback
 
+import multiprocessing as mp
 import tomopy
 import timemory
 import timemory.options as options
+import xdesign as xd
 
 from benchmarking.utils import *
 from benchmarking.plot import image_quality_vs_time_plot
 
 
-def get_basepath(
-    output_dir="", phantom="", algorithm="", filter_name="", **kwargs
-):
+def get_basepath(output_dir="",
+                 phantom="",
+                 algorithm="",
+                 filter_name="",
+                 **kwargs):
     """Return the folder where data for a given reconstruction goes."""
     return os.path.join(
-        output_dir, phantom, algorithm, filter_name,
+        output_dir,
+        phantom,
+        algorithm,
+        filter_name,
     )
 
 
 @timemory.util.auto_timer()
 def generate_phantom(
-    phantom="shepp3d", nsize=512, nangles=360, output_dir="", format="png",
-    noise=False, trials=1,
-    **kwargs,
+        phantom="shepp3d",
+        nsize=512,
+        nangles=360,
+        output_dir="",
+        format="png",
+        noise=False,
+        trials=1,
+        **kwargs,
 ):
     """Simulate data acquisition for tomography using TomoPy.
 
@@ -109,20 +118,26 @@ def generate_phantom(
     save_image(
         original[0, ...],
         os.path.join(basepath, "original.{}".format(format.lower())),
-        vmin=0, vmax=1.1*dynam_range,
-        )
+        vmin=0,
+        vmax=1.1 * dynam_range,
+    )
     np.savez(
         os.path.join(basepath, "simulated_data.npz"),
-        original=original, angles=angles, sinogram=sinogram
-    )
+        original=original,
+        angles=angles,
+        sinogram=sinogram)
     return original
 
 
 @timemory.util.auto_timer()
-def run(
-    phantom, algorithm, ncores, num_iter,
-    output_dir="", filter_name="", format="png", **kwargs
-):
+def run(phantom,
+        algorithm,
+        ncores,
+        num_iter,
+        output_dir="",
+        filter_name="",
+        format="png",
+        **kwargs):
     """Run reconstruction benchmarks for phantoms using algorithm.
 
     Save each iteration's reconstructed image to the algorithms folder along
@@ -155,7 +170,7 @@ def run(
     recon = None
     basepath = get_basepath(output_dir, phantom, algorithm, filter_name)
     os.makedirs(basepath, exist_ok=True)
-    for i in range(1, num_iter+1, step):
+    for i in range(1, num_iter + 1, step):
         filename = os.path.join(basepath, "{:03d}".format(i))
         # look for the ouput; only reconstruct if it doesn't exist
         if False:  # os.path.isfile(filename + '.npz'):
@@ -163,8 +178,7 @@ def run(
             recon = existing_data['recon']
         else:
             with timemory.util.auto_timer(
-                "[tomopy.recon(algorithm='{}')]".format(algorithm)
-            ):
+                    "[tomopy.recon(algorithm='{}')]".format(algorithm)):
                 recon = tomopy.recon(
                     init_recon=recon,
                     tomo=simdata['sinogram'],
@@ -173,7 +187,8 @@ def run(
                 )
         # padding was added to keep square image in the field of view
         rec = trim_border(
-            recon, recon.shape[0],
+            recon,
+            recon.shape[0],
             recon.shape[1] - obj.shape[1],
             recon.shape[2] - obj.shape[2],
         )
@@ -203,7 +218,8 @@ def run(
         save_image(
             rec[0],
             "{}.{}".format(filename, format.lower()),
-            vmin=0, vmax=1.1*dynamic_range,
+            vmin=0,
+            vmax=1.1 * dynamic_range,
         )
     return best_rec
 
@@ -242,15 +258,16 @@ def main(args):
 
     comparison = ImageComparison(
         len(args.algorithm),
-        original.shape[0], original.shape[1], original.shape[2],
-        solution=original
-        )
+        original.shape[0],
+        original.shape[1],
+        original.shape[2],
+        solution=original)
 
     # For each algorithm run benchmarks
     for nitr, alg in enumerate(args.algorithm):
         params = vars(args).copy()
         params["algorithm"] = alg
-        comparison.assign(alg, nitr+1, run(get_recon=True, **params))
+        comparison.assign(alg, nitr + 1, run(get_recon=True, **params))
 
     # Publish reports
 
@@ -260,19 +277,24 @@ def main(args):
     dname = os.path.join(bname, "diff_{}".format(comparison.tagname()))
     imgs = []
     imgs.extend(
-        output_images(comparison.results, fname,
-                      args.format, args.scale,
-                      # scale images with range of original
-                      vmin=0, vmax=np.max(original),
-                      )
-    )
+        output_images(
+            comparison.results,
+            fname,
+            args.format,
+            args.scale,
+            # scale images with range of original
+            vmin=0,
+            vmax=np.max(original),
+        ))
     imgs.extend(
-        output_images(comparison.delta, dname,
-                      args.format, args.scale,
-                      # scale images =/- range of original
-                      vmin=-np.max(original), vmax=np.max(original)
-                      )
-    )
+        output_images(
+            comparison.delta,
+            dname,
+            args.format,
+            args.scale,
+            # scale images =/- range of original
+            vmin=-np.max(original),
+            vmax=np.max(original)))
 
     # timing report to stdout
     print('{}\n'.format(manager))
@@ -298,9 +320,10 @@ def main(args):
 
     # provide timing plots
     try:
-        timemory.plotting.plot(files=[timemory.options.serial_filename],
-                               echo_dart=True,
-                               output_dir=timemory.options.output_dir)
+        timemory.plotting.plot(
+            files=[timemory.options.serial_filename],
+            echo_dart=True,
+            output_dir=timemory.options.output_dir)
     except Exception as e:
         print("Exception - {}".format(e))
 
@@ -314,8 +337,7 @@ def main(args):
             # prepend phantom name
             img_name = "_".join([args.phantom, img_name])
             timemory.plotting.echo_dart_tag(
-                img_name, filepath=imgs[i], img_type=args.format
-            )
+                img_name, filepath=imgs[i], img_type=args.format)
     except Exception as e:
         print("Exception - {}".format(e))
 
@@ -333,50 +355,67 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-p", "--phantom",
+        "-p",
+        "--phantom",
         help="name a phantom to use for the benchmark(s)",
-        default="lena", choices=phantom_choices, type=str)
+        default="lena",
+        choices=phantom_choices,
+        type=str)
     parser.add_argument(
-        "-a", "--algorithm",
+        "-a",
+        "--algorithm",
         help=("name one or more reconstruction algorithm to use for the "
               "benchmark(s)"),
-        default=["art"], choices=algorithm_choices + ["all"], type=str,
+        default=["art"],
+        choices=algorithm_choices + ["all"],
+        type=str,
         nargs='+')
     parser.add_argument(
-        "-A", "--angles",
+        "-A",
+        "--angles",
         help="specify the number projection angles for the simulation(s)",
-        default=360, type=int)
+        default=360,
+        type=int)
     parser.add_argument(
-        "-s", "--size",
+        "-s",
+        "--size",
         help="specify the edge length in pixels of the reconstructed image(s)",
-        default=512, type=int)
+        default=512,
+        type=int)
     parser.add_argument(
-        "-n", "--ncores", help="specify the number of cpu cores to use",
-        default=mp.cpu_count(), type=int)
+        "-n",
+        "--ncores",
+        help="specify the number of cpu cores to use",
+        default=mp.cpu_count(),
+        type=int)
     parser.add_argument(
-        "-f", "--format",
+        "-f",
+        "--format",
         help="specify the file format of the output images",
-        default="jpeg", type=str)
+        default="jpeg",
+        type=str)
     parser.add_argument(
-        "-S", "--scale",
+        "-S",
+        "--scale",
         help="scale size of the output images by this positive factor",
-        default=1, type=int)
+        default=1,
+        type=int)
     # FIXME: Add better docstring for ncol. What rows?
     parser.add_argument(
-        "-c", "--ncol", help="Number of images per row",
-        default=1, type=int)
+        "-c", "--ncol", help="Number of images per row", default=1, type=int)
     parser.add_argument(
-        "-i", "--num-iter",
+        "-i",
+        "--num-iter",
         help="specify a number of iterations for iterative algorithms",
-        default=10, type=int)
+        default=10,
+        type=int)
     parser.add_argument(
-        "--noise",
-        help="add Poisson noise to simulation",
-        action='store_true')
+        "--noise", help="add Poisson noise to simulation", action='store_true')
     parser.add_argument(
         "--trials",
         help="run this many trials of the same phantom simultaneously",
-        default=1, type=int)
+        default=1,
+        type=int)
 
     args = timemory.options.add_args_and_parse_known(parser)
 

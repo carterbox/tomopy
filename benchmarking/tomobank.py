@@ -45,7 +45,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # #########################################################################
-
 """
 TomoPy script to reconstruct a TomoBank file
 """
@@ -53,18 +52,18 @@ TomoPy script to reconstruct a TomoBank file
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import argparse
+import collections
+import json
 import os
 import sys
-import json
-import argparse
 import traceback
-import numpy as np
-import collections
 
-import h5py
-import tomopy
 import dxchange
+import h5py
+import numpy as np
 import timemory
+import tomopy
 
 from benchmarking.utils import *
 
@@ -103,7 +102,7 @@ def restricted_float(x):
 
     x = float(x)
     if x < 0.0 or x >= 1.0:
-        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]" % (x,))
+        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]" % (x, ))
     return x
 
 
@@ -134,16 +133,17 @@ def reconstruct(h5fname, sino, rot_center, args, blocked_views=None):
     if blocked_views is not None:
         print("Blocked Views: ", blocked_views)
         proj = np.concatenate((proj[0:blocked_views[0], :, :],
-                               proj[blocked_views[1]+1:-1, :, :]), axis=0)
+                               proj[blocked_views[1] + 1:-1, :, :]),
+                              axis=0)
         theta = np.concatenate((theta[0:blocked_views[0]],
-                                theta[blocked_views[1]+1: -1]))
+                                theta[blocked_views[1] + 1:-1]))
 
     # Flat-field correction of raw data.
     data = tomopy.normalize(proj, flat, dark, cutoff=1.4)
 
     # remove stripes
-    data = tomopy.remove_stripe_fw(data, level=7, wname='sym16', sigma=1,
-                                   pad=True)
+    data = tomopy.remove_stripe_fw(
+        data, level=7, wname='sym16', sigma=1, pad=True)
 
     print("Raw data: ", h5fname)
     print("Center: ", rot_center)
@@ -170,7 +170,7 @@ def reconstruct(h5fname, sino, rot_center, args, blocked_views=None):
 
     # Reconstruct object.
     with timemory.util.auto_timer(
-        "[tomopy.recon(algorithm='{}')]".format(algorithm)):
+            "[tomopy.recon(algorithm='{}')]".format(algorithm)):
         rec = tomopy.recon(proj, theta, **_kwargs)
 
     # Mask each reconstructed slice with a circle.
@@ -197,18 +197,18 @@ def rec_full(h5fname, rot_center, args, blocked_views, nchunks=16):
     # reconstruction.
     chunks = nchunks
 
-    nSino_per_chunk = (sino_end - sino_start)/chunks
+    nSino_per_chunk = (sino_end - sino_start) / chunks
     print("Reconstructing [%d] slices from slice [%d] to [%d] "
-          "in [%d] chunks of [%d] slices each" %
-          ((sino_end - sino_start), sino_start, sino_end,
-           chunks, nSino_per_chunk))
+          "in [%d] chunks of [%d] slices each" % (
+              (sino_end - sino_start), sino_start, sino_end, chunks,
+              nSino_per_chunk))
 
     imgs = []
     strt = 0
     for iChunk in range(0, chunks):
-        print('\n  -- chunk # %i' % (iChunk+1))
-        sino_chunk_start = sino_start + nSino_per_chunk*iChunk
-        sino_chunk_end = sino_start + nSino_per_chunk*(iChunk+1)
+        print('\n  -- chunk # %i' % (iChunk + 1))
+        sino_chunk_start = sino_start + nSino_per_chunk * iChunk
+        sino_chunk_end = sino_start + nSino_per_chunk * (iChunk + 1)
         print('\n  --------> [%i, %i]' % (sino_chunk_start, sino_chunk_end))
 
         if sino_chunk_end > sino_end:
@@ -223,8 +223,8 @@ def rec_full(h5fname, rot_center, args, blocked_views, nchunks=16):
         fname = os.path.join(output_dir, 'recon_{}_'.format(args.algorithm))
         print("Reconstructions: ", fname)
 
-        imgs.extend(output_images(rec, fname, args.format, args.scale,
-                                  args.ncol))
+        imgs.extend(
+            output_images(rec, fname, args.format, args.scale, args.ncol))
         # dxchange.write_tiff_stack(rec, fname=fname, start=strt)
         strt += sino[1] - sino[0]
 
@@ -273,9 +273,10 @@ def output_analysis(manager, args):
     # provide timing plots
     try:
         print("\nPlotting TiMemory results...\n")
-        timemory.plotting.plot(files=[timemory.options.serial_filename],
-                               echo_dart=True,
-                               output_dir=timemory.options.output_dir)
+        timemory.plotting.plot(
+            files=[timemory.options.serial_filename],
+            echo_dart=True,
+            output_dir=timemory.options.output_dir)
     except Exception as e:
         print("Exception [timemory.plotting] - {}".format(e))
     # provide results to dashboard
@@ -304,40 +305,64 @@ def main(arg):
     default_ncores = mp.cpu_count()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("fname",
-                        help=("file name of a tmographic dataset: "
-                              "/data/sample.h5")
-                        )
-    parser.add_argument("--axis", nargs='?', type=str, default="0",
-                        help=("rotation axis location: 1024.0 "
-                              "(default 1/2 image horizontal size)")
-                        )
-    parser.add_argument("--type", nargs='?', type=str, default="slice",
-                        help="reconstruction type: full (default slice)")
-    parser.add_argument("--nsino", nargs='?', type=restricted_float,
-                        default=0.5,
-                        help=("location of the sinogram used by slice "
-                              "reconstruction (0 top, 1 bottom): 0.5 "
-                              "(default 0.5)")
-                        )
-    parser.add_argument("-a", "--algorithm", help="Select the algorithm",
-                        default="gridrec", choices=algorithm_choices, type=str)
-    parser.add_argument("-n", "--ncores", help="number of cores",
-                        default=default_ncores, type=int)
-    parser.add_argument("-f", "--format", help="output image format",
-                        default="jpeg", type=str)
-    parser.add_argument("-S", "--scale",
-                        help="scale image by a positive factor",
-                        default=1, type=int)
-    parser.add_argument("-c", "--ncol", help="Number of images per row",
-                        default=1, type=int)
-    parser.add_argument("-i", "--num-iter", help="Number of iterations",
-                        default=1, type=int)
-    parser.add_argument("-o", "--output-dir", help="Output directory",
-                        default=None, type=str)
-    parser.add_argument("-g", "--grainsize",
-                        help="Granularity of slices to compute",
-                        default=16, type=int)
+    parser.add_argument(
+        "fname",
+        help=("file name of a tmographic dataset: "
+              "/data/sample.h5"))
+    parser.add_argument(
+        "--axis",
+        nargs='?',
+        type=str,
+        default="0",
+        help=("rotation axis location: 1024.0 "
+              "(default 1/2 image horizontal size)"))
+    parser.add_argument(
+        "--type",
+        nargs='?',
+        type=str,
+        default="slice",
+        help="reconstruction type: full (default slice)")
+    parser.add_argument(
+        "--nsino",
+        nargs='?',
+        type=restricted_float,
+        default=0.5,
+        help=("location of the sinogram used by slice "
+              "reconstruction (0 top, 1 bottom): 0.5 "
+              "(default 0.5)"))
+    parser.add_argument(
+        "-a",
+        "--algorithm",
+        help="Select the algorithm",
+        default="gridrec",
+        choices=algorithm_choices,
+        type=str)
+    parser.add_argument(
+        "-n",
+        "--ncores",
+        help="number of cores",
+        default=default_ncores,
+        type=int)
+    parser.add_argument(
+        "-f", "--format", help="output image format", default="jpeg", type=str)
+    parser.add_argument(
+        "-S",
+        "--scale",
+        help="scale image by a positive factor",
+        default=1,
+        type=int)
+    parser.add_argument(
+        "-c", "--ncol", help="Number of images per row", default=1, type=int)
+    parser.add_argument(
+        "-i", "--num-iter", help="Number of iterations", default=1, type=int)
+    parser.add_argument(
+        "-o", "--output-dir", help="Output directory", default=None, type=str)
+    parser.add_argument(
+        "-g",
+        "--grainsize",
+        help="Granularity of slices to compute",
+        default=16,
+        type=int)
 
     args = parser.parse_args()
 
@@ -359,7 +384,7 @@ def main(arg):
     # Set default rotation axis location
     if rot_center == 0:
         data_size = get_dx_dims(fname, 'data')
-        rot_center =  data_size[2]/2
+        rot_center = data_size[2] / 2
 
     nsino = float(args.nsino)
 
@@ -381,6 +406,7 @@ def main(arg):
         print("File name does not exist: ", fname)
 
     output_analysis(manager, args)
+
 
 if __name__ == "__main__":
     ret = 0

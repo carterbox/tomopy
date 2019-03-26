@@ -3,17 +3,19 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-
 import glob
 import json
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import re
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 def image_quality_vs_time_plot(
-    plot_name, json_filename, algo_folder_dir,
+        plot_name,
+        json_filename,
+        algo_folder_dir,
 ):
     """Create a lineplot with errorbars of image quality vs time.
 
@@ -45,16 +47,13 @@ def image_quality_vs_time_plot(
     for algo in results.keys():
         # Normalize the iterations to the range [0, total_wall_time]
         time_steps = (
-            np.array(results[algo]["num_iter"])
-            / results[algo]["num_iter"][-1]
-            * results[algo]["wall time"]
-        )
+            np.array(results[algo]["num_iter"]) / results[algo]["num_iter"][-1]
+            * results[algo]["wall time"])
         plt.errorbar(
             x=time_steps,
             y=results[algo]["quality"],
             yerr=results[algo]["error"],
-            fmt='-o'
-        )
+            fmt='-o')
 
     plt.ylim([0, 1])
 

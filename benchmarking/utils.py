@@ -45,19 +45,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE         #
 # POSSIBILITY OF SUCH DAMAGE.                                             #
 # #########################################################################
-
 """Utilities for TomoPy + PyCTest."""
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os.path
-import timemory
-import numpy as np
+
 import matplotlib.pyplot as plt
-import scipy.ndimage as ndimage
-import numpy.linalg as LA
 import multiprocessing as mp
+import numpy as np
+import numpy.linalg as LA
+import scipy.ndimage as ndimage
+import timemory
 
 
 def exit_action(errcode):
@@ -69,11 +69,14 @@ def exit_action(errcode):
     f.close()
 
 
-algorithm_choices = ['gridrec', 'art', 'fbp', 'bart', 'mlem', 'osem', 'sirt',
-                     'ospml_hybrid', 'ospml_quad', 'pml_hybrid', 'pml_quad',
-                     'tv', 'grad']
-phantom_choices = ["baboon", "cameraman", "barbara", "checkerboard",
-                   "lena", "peppers", "shepp2d", "shepp3d"]
+algorithm_choices = [
+    'gridrec', 'art', 'fbp', 'bart', 'mlem', 'osem', 'sirt', 'ospml_hybrid',
+    'ospml_quad', 'pml_hybrid', 'pml_quad', 'tv', 'grad'
+]
+phantom_choices = [
+    "baboon", "cameraman", "barbara", "checkerboard", "lena", "peppers",
+    "shepp2d", "shepp3d"
+]
 default_nitr = 10  # number of iterations
 default_phantom_size = 512
 default_ncores = mp.cpu_count()  # number of cores
@@ -114,7 +117,7 @@ def convert_image(fname, current_format, new_format="jpeg"):
         out = img.convert(mode="RGB")
         out.save(fname, format=new_format, quality=95)
         print("  --> Converted '{}' to {} format...".format(
-              fname, new_format.upper()))
+            fname, new_format.upper()))
     except Exception as e:
         print("  --> ##### {}...".format(e))
         print("  --> ##### Exception occurred converting "
@@ -237,8 +240,8 @@ def quantify_difference(label, img, rec):
     _ncol = _rec[0].shape[1]
     _nimg = _rec.shape[0]
 
-    _img = _img.reshape([_nrow*_nimg, _ncol])
-    _rec = _rec.reshape([_nrow*_nimg, _ncol])
+    _img = _img.reshape([_nrow * _nimg, _ncol])
+    _rec = _rec.reshape([_nrow * _nimg, _ncol])
 
     # pixel diff
     _sub = _img - _rec
@@ -312,7 +315,12 @@ class ImageComparison(object):
 
     """
 
-    def __init__(self, ncompare, nslice, nrows, ncols, solution=None,
+    def __init__(self,
+                 ncompare,
+                 nslice,
+                 nrows,
+                 ncols,
+                 solution=None,
                  dtype=float):
         """.
 
@@ -363,9 +371,7 @@ class ImageComparison(object):
             print("storage: {}".format(self.store_dims))
             print("tag: {}, block: {}".format(tag, block))
             print("target = [{}, {}, {}:{}]".format(
-                self.input_dims[0],
-                self.input_dims[1],
-                _b, _e))
+                self.input_dims[0], self.input_dims[1], _b, _e))
             print(e)
             print("array: {}".format(image))
             raise
