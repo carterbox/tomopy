@@ -100,6 +100,10 @@ allowed_recon_kwargs = {
     'tv': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
     'grad': ['num_gridx', 'num_gridy', 'num_iter', 'reg_par'],
     'tikh': ['num_gridx', 'num_gridy', 'num_iter', 'reg_data', 'reg_par'],
+    'art_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter', 'bin', 'mask'],
+    'art_convolve': ['num_gridx', 'num_gridy', 'num_iter', 'bin', 'mask'],
+    'sirt_fly_rotation': ['num_gridx', 'num_gridy', 'num_iter', 'bin', 'mask'],
+    'sirt_convolve': ['num_gridx', 'num_gridy', 'num_iter', 'bin', 'mask'],
 }
 
 
@@ -315,7 +319,10 @@ def recon(tomo,
     # Initialize reconstruction.
     recon_shape = (tomo.shape[0], kwargs['num_gridx'], kwargs['num_gridy'])
     if algorithm == 'gridrec':
-        recon = _init_recon(recon_shape, init_recon, val=0, sharedmem=False,
+        recon = _init_recon(recon_shape,
+                            init_recon,
+                            val=0,
+                            sharedmem=False,
                             empty=True)
     else:
         recon = _init_recon(recon_shape, init_recon, sharedmem=False)
@@ -410,8 +417,9 @@ def _dist_recon(tomo, center, recon, algorithm, args, kwargs, ncore, nchunk):
             "Set ncore <= 'TOMOPY_PYTHON_THREADS'.".format(pythreads, ncore))
         ncore = int(pythreads)
 
-    logger.info("Reconstructing {} slice groups with {} master threads..."
-                .format(len(slcs), ncore))
+    logger.info(
+        "Reconstructing {} slice groups with {} master threads...".format(
+            len(slcs), ncore))
     # this is used internally to prevent oversubscription
     os.environ["TOMOPY_PYTHON_THREADS"] = "{}".format(ncore)
 
