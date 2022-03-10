@@ -49,59 +49,72 @@
 #    define DLL
 #endif
 
-void DLL
-     art(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-         float* recon, int ngridx, int ngridy, int num_iter);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-void DLL
-     bart(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-          float* recon, int ngridx, int ngridy, int num_iter, int num_block,
-          const int* ind_block);
+    void DLL art(const float* data, int dy, int dt, int dx, const float* center,
+                 const float* theta, float* recon, int ngridx, int ngridy, int num_iter);
 
-void DLL
-     fbp(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-         float* recon, int ngridx, int ngridy, const char* name, const float* filter_par);
-
-void DLL
-     grad(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-          float* recon, int ngridx, int ngridy, int num_iter, const float* reg_pars);
-
-void DLL
-     osem(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-          float* recon, int ngridx, int ngridy, int num_iter, int num_block,
-          const int* ind_block);
-
-void DLL
-     ospml_hybrid(const float* data, int dy, int dt, int dx, const float* center,
+    void DLL bart(const float* data, int dy, int dt, int dx, const float* center,
                   const float* theta, float* recon, int ngridx, int ngridy, int num_iter,
-                  const float* reg_pars, int num_block, const int* ind_block);
+                  int num_block, const int* ind_block);
 
-void DLL
-     ospml_quad(const float* data, int dy, int dt, int dx, const float* center,
+    void DLL fbp(const float* data, int dy, int dt, int dx, const float* center,
+                 const float* theta, float* recon, int ngridx, int ngridy,
+                 const char* name, const float* filter_par);
+
+    void DLL grad(const float* data, int dy, int dt, int dx, const float* center,
+                  const float* theta, float* recon, int ngridx, int ngridy, int num_iter,
+                  const float* reg_pars);
+
+    void DLL osem(const float* data, int dy, int dt, int dx, const float* center,
+                  const float* theta, float* recon, int ngridx, int ngridy, int num_iter,
+                  int num_block, const int* ind_block);
+
+    void DLL ospml_hybrid(const float* data, int dy, int dt, int dx, const float* center,
+                          const float* theta, float* recon, int ngridx, int ngridy,
+                          int num_iter, const float* reg_pars, int num_block,
+                          const int* ind_block);
+
+    void DLL ospml_quad(const float* data, int dy, int dt, int dx, const float* center,
+                        const float* theta, float* recon, int ngridx, int ngridy,
+                        int num_iter, const float* reg_pars, int num_block,
+                        const int* ind_block);
+
+    void DLL tv(const float* data, int dy, int dt, int dx, const float* center,
                 const float* theta, float* recon, int ngridx, int ngridy, int num_iter,
-                const float* reg_pars, int num_block, const int* ind_block);
+                const float* reg_pars);
 
-void DLL
-     tv(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-        float* recon, int ngridx, int ngridy, int num_iter, const float* reg_pars);
+    void DLL tikh(const float* data, int dy, int dt, int dx, const float* center,
+                  const float* theta, float* recon, int ngridx, int ngridy, int num_iter,
+                  const float* reg_data, const float* reg_pars);
 
-void DLL
-     tikh(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-          float* recon, int ngridx, int ngridy, int num_iter, const float* reg_data, const float* reg_pars);
+    void DLL vector(const float* data, int dy, int dt, int dx, const float* center,
+                    const float* theta, float* recon1, float* recon2, int ngridx,
+                    int ngridy, int num_iter);
 
-void DLL
-     vector(const float* data, int dy, int dt, int dx, const float* center, const float* theta,
-            float* recon1, float* recon2, int ngridx, int ngridy, int num_iter);
+    void DLL vector2(const float* data1, const float* data2, int dy, int dt, int dx,
+                     const float* center1, const float* center2, const float* theta1,
+                     const float* theta2, float* recon1, float* recon2, float* recon3,
+                     int ngridx, int ngridy, int num_iter, int axis1, int axis2);
 
-void DLL
-     vector2(const float* data1, const float* data2, int dy, int dt, int dx,
-             const float* center1, const float* center2, const float* theta1,
-             const float* theta2, float* recon1, float* recon2, float* recon3, int ngridx,
-             int ngridy, int num_iter, int axis1, int axis2);
+    void DLL vector3(const float* data1, const float* data2, const float* data3, int dy,
+                     int dt, int dx, const float* center1, const float* center2,
+                     const float* center3, const float* theta1, const float* theta2,
+                     const float* theta3, float* recon1, float* recon2, float* recon3,
+                     int ngridx, int ngridy, int num_iter, int axis1, int axis2,
+                     int axis3);
 
-void DLL
-     vector3(const float* data1, const float* data2, const float* data3, int dy, int dt,
-             int dx, const float* center1, const float* center2, const float* center3,
-             const float* theta1, const float* theta2, const float* theta3, float* recon1,
-             float* recon2, float* recon3, int ngridx, int ngridy, int num_iter, int axis1,
-             int axis2, int axis3);
+    void DLL art_convolve(const float* data, int dy, int dt, int dx, const float* center,
+                          const float* theta, float* recon, int ngridx, int ngridy,
+                          int num_iter, int nmask, int* mask, int* ind_block);
+
+    void DLL sirt_convolve(const float* data, int dy, int dt, int dx, const float* center,
+                           const float* theta, float* recon, int ngridx, int ngridy,
+                           int num_iter, int nmask, int* mask);
+
+#ifdef __cplusplus
+}
+#endif
