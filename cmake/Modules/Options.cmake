@@ -104,17 +104,6 @@ if(TOMOPY_USE_ARCH)
   add_option(TOMOPY_USE_AVX512 "Enable AVX-512 flags (if available)" OFF)
 endif()
 
-set(PTL_USE_TBB
-    OFF
-    CACHE BOOL "Enable TBB backend for PTL")
-foreach(_OPT ARCH AVX512 GPERF)
-  if(TOMOPY_USE_${_OPT})
-    set(PTL_USE_${_OPT}
-        ON
-        CACHE BOOL "Enable similar PTL option to TOMOPY_USE_${_OPT}" FORCE)
-  endif()
-endforeach()
-
 # RPATH settings
 set(_RPATH_LINK OFF)
 if(APPLE)

@@ -9,28 +9,10 @@ set(BUILD_STATIC_LIBS
 set(BUILD_SHARED_LIBS
     OFF
     CACHE BOOL "Build shared libraries")
-set(PTL_DEVELOPER_INSTALL
-    OFF
-    CACHE BOOL "Install headers, cmake export, and shared libs" FORCE)
 set(CMAKE_POSITION_INDEPENDENT_CODE
     ON
     CACHE BOOL "Position independent code" FORCE)
-# ------------------------------------------------------------------------------#
-#
-# PTL submodule
-#
-# ------------------------------------------------------------------------------#
-if(TOMOPY_USE_OPENCV OR TOMOPY_USE_CUDA)
-  checkout_git_submodule(
-    RECURSIVE
-    TEST_FILE
-    CMakeLists.txt
-    RELATIVE_PATH
-    source/PTL
-    WORKING_DIRECTORY
-    ${PROJECT_SOURCE_DIR})
-  add_subdirectory(PTL EXCLUDE_FROM_ALL)
-endif()
+
 # ------------------------------------------------------------------------------#
 #
 # TomoPy Python module

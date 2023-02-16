@@ -17,6 +17,8 @@ tomopy_add_library(
   utils.hh
   ${HEADERS})
 
+find_package(PTL 2 REQUIRED)
+
 target_include_directories(
   tomo-accel
   PUBLIC $<BUILD_INTERFACE:${tomopy_SOURCE_DIR}/include>
@@ -48,7 +50,7 @@ if(TOMOPY_USE_CUDA)
 endif(TOMOPY_USE_CUDA)
 
 target_link_libraries(tomo-accel PRIVATE ${TOMOPY_EXTERNAL_LIBRARIES}
-                                         ${TOMOPY_EXTERNAL_PRIVATE_LIBRARIES} ptl-static)
+                                         ${TOMOPY_EXTERNAL_PRIVATE_LIBRARIES} ptl)
 
 target_compile_definitions(tomo-accel PRIVATE ${${PROJECT_NAME}_DEFINITIONS} TOMOPY_USE_PTL)
 

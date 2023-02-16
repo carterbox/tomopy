@@ -24,9 +24,9 @@ command: ``which nvcc``. If the command returns a path to the compiler, build To
 If not, locate the CUDA compiler and place the path to the compiler in ``PATH``, remove the
 build directory (``rm -r _skbuild`` or ``python setup.py clean``) and rebuild.
 
-TomoPy includes the `Parallel Tasking Library (PTL) <https://github.com/jrmadsen/PTL>`_ as a git submodule
+The TomoPy accel module requires the `Parallel Tasking Library (PTL) <https://github.com/jrmadsen/PTL>`_ as a dependency
 to handle the creation of a secondary thread-pool that assists in hiding the communication latency between
-the CPU and GPU. This submodule is automatically checked out and compiled by the CMake build system.
+the CPU and GPU. This library must be build separately and linked dynamically at compile time.
 
 Reconstructing with GPU offloading
 ----------------------------------

@@ -299,4 +299,4 @@ endforeach()
 # include dirs
 set(TARGET_INCLUDE_DIRECTORIES
     ${PROJECT_SOURCE_DIR}/source/include
-    ${PROJECT_SOURCE_DIR}/source/PTL/source ${TOMOPY_EXTERNAL_INCLUDE_DIRS})
+    ${TOMOPY_EXTERNAL_INCLUDE_DIRS})
